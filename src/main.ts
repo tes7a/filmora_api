@@ -1,13 +1,18 @@
-import { ValidationPipe } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
+import { NestFactory, Reflector } from '@nestjs/core';
+import { PinoLogger } from 'nestjs-pino';
+
+import { AllExceptionsFilter } from '@/utils';
 
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
-  // Enable DTO validation (class-validator/class-transformer)
+  // Use nestjs-pino Logger (singleton, implements LoggerService)
+  const pinoLogger = await app.resolve(PinoLogger);
+
+  // ValidationPipe globally
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -17,21 +22,19 @@ async function bootstrap() {
     }),
   );
 
-  // Swagger (OpenAPI)
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('Filmora API')
-    .setDescription('API documentation')
-    .setVersion('1.0.0')
-    .build();
+  // ClassSerializerInterceptor globally
+  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, document);
+  // Unified errors
+  app.useGlobalFilters(new AllExceptionsFilter(pinoLogger));
 
   const port = process.env.PORT ? Number(process.env.PORT) : 3000;
   await app.listen(port);
 
-  console.log(`🚀 API running on http://localhost:${port}`);
-  console.log(`📚 Swagger on http://localhost:${port}/api/docs`);
+  pinoLogger.info(
+    { port, env: process.env.NODE_ENV ?? 'development' },
+    'API started',
+  );
 }
 
 void bootstrap();
