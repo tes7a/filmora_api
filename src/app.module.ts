@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { TerminusModule } from '@nestjs/terminus';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { randomUUID } from 'crypto';
 import { LoggerModule } from 'nestjs-pino';
@@ -44,6 +45,7 @@ import { AppService } from './app.service';
         },
       ],
     }),
+    TerminusModule,
   ],
   controllers: [AppController],
   providers: [AppService],
