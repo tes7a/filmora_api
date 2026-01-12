@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiProperty, ApiTags } from '@nestjs/swagger';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { IsInt, IsString, Max, Min, MinLength } from 'class-validator';
 
 import { AppService } from './app.service';
@@ -27,11 +28,13 @@ class EchoResponseDto {
   summary!: string;
 }
 
+@UseGuards(ThrottlerGuard) // tighter for login // ✅ throttling only inside this controller
 @ApiTags('App')
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Get()
   @ApiOkResponse({ type: HelloResponseDto })
   getHello(): HelloResponseDto {
