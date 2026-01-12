@@ -1,0 +1,407 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model auth_sessions {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id       String    @db.Uuid
+  refresh_token String    @unique @db.VarChar(255)
+  expires_at    DateTime  @db.Timestamp(6)
+  created_at    DateTime  @default(now()) @db.Timestamp(6)
+  revoked_at    DateTime? @db.Timestamp(6)
+  ip            String?   @db.VarChar(64)
+  user_agent    String?   @db.VarChar(255)
+  users         users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "auth_sessions_user_fk")
+
+  @@index([expires_at], map: "idx_auth_sessions_expires_at")
+  @@index([revoked_at], map: "idx_auth_sessions_revoked_at")
+  @@index([user_id], map: "idx_auth_sessions_user_id")
+}
+
+model comments {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  review_id      String         @db.Uuid
+  user_id        String         @db.Uuid
+  parent_id      String?        @db.Uuid
+  body           String
+  status         comment_status @default(visible)
+  created_at     DateTime       @default(now()) @db.Timestamp(6)
+  updated_at     DateTime       @default(now()) @db.Timestamp(6)
+  comments       comments?      @relation("commentsTocomments", fields: [parent_id], references: [id], onUpdate: NoAction, map: "comments_parent_fk")
+  other_comments comments[]     @relation("commentsTocomments")
+  reviews        reviews        @relation(fields: [review_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "comments_review_fk")
+  users          users          @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "comments_user_fk")
+
+  @@index([parent_id], map: "idx_comments_parent_id")
+  @@index([review_id], map: "idx_comments_review_id")
+}
+
+model complaints {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id            String               @db.Uuid
+  target_type        target_type
+  target_id          String               @db.Uuid
+  reason             String
+  status             complaint_status     @default(pending)
+  created_at         DateTime             @default(now()) @db.Timestamp(6)
+  updated_at         DateTime             @default(now()) @db.Timestamp(6)
+  resolved_at        DateTime?            @db.Timestamp(6)
+  users              users                @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "complaints_user_fk")
+  moderation_actions moderation_actions[]
+
+  @@index([status], map: "idx_complaints_status")
+  @@index([target_type, target_id], map: "idx_complaints_target")
+  @@index([user_id], map: "idx_complaints_user_id")
+}
+
+model countries {
+  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code           String           @db.Char(2)
+  name           String           @unique @db.VarChar(100)
+  created_at     DateTime         @db.Timestamp(6)
+  updated_at     DateTime         @db.Timestamp(6)
+  film_countries film_countries[]
+}
+
+model film_countries {
+  film_id    String    @db.Uuid
+  country_id String    @db.Uuid
+  created_at DateTime  @default(now()) @db.Timestamp(6)
+  countries  countries @relation(fields: [country_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "film_countries_country_fk")
+  films      films     @relation(fields: [film_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "film_countries_film_fk")
+
+  @@id([film_id, country_id], map: "film_countries_pk")
+}
+
+model film_genres {
+  film_id    String   @db.Uuid
+  genre_id   String   @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  films      films    @relation(fields: [film_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "film_genres_film_fk")
+  genres     genres   @relation(fields: [genre_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "film_genres_genre_fk")
+
+  @@id([film_id, genre_id], map: "film_genres_pk")
+}
+
+model film_person_roles {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  film_id        String    @db.Uuid
+  person_id      String    @db.Uuid
+  role_type      role_type
+  character_name String?   @db.VarChar(255)
+  billing_order  Int?
+  created_at     DateTime  @default(now()) @db.Timestamp(6)
+  updated_at     DateTime  @default(now()) @db.Timestamp(6)
+  films          films     @relation(fields: [film_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "film_person_roles_film_fk")
+  persons        persons   @relation(fields: [person_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "film_person_roles_person_fk")
+}
+
+model film_tags {
+  film_id    String   @db.Uuid
+  tag_id     String   @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  films      films    @relation(fields: [film_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "film_tags_film_fk")
+  tags       tags     @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "film_tags_tag_fk")
+
+  @@id([film_id, tag_id], map: "film_tags_pk")
+}
+
+model films {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title             String              @db.VarChar(255)
+  original_title    String              @unique @db.VarChar(255)
+  description       String?
+  release_year      Int
+  duration_min      Int
+  age_rating        String?             @db.VarChar(16)
+  status            film_status
+  average_rating    Decimal             @default(0.0) @db.Decimal(3, 1)
+  ratings_count     Int                 @default(0)
+  popularity_score  Decimal             @default(0) @db.Decimal(10, 2)
+  created_at        DateTime            @default(now()) @db.Timestamp(6)
+  updated_at        DateTime            @default(now()) @db.Timestamp(6)
+  film_countries    film_countries[]
+  film_genres       film_genres[]
+  film_person_roles film_person_roles[]
+  film_tags         film_tags[]
+  ratings           ratings[]
+  reviews           reviews[]
+  user_list_items   user_list_items[]
+}
+
+model genres {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String        @unique @db.VarChar(100)
+  slug        String        @unique @db.VarChar(100)
+  description String?
+  status      genre_status
+  created_at  DateTime      @db.Timestamp(6)
+  updated_at  DateTime      @db.Timestamp(6)
+  film_genres film_genres[]
+}
+
+model migrations {
+  id         Int      @id
+  applied_at DateTime @db.Timestamp(6)
+}
+
+model moderation_actions {
+  id           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  moderator_id String          @db.Uuid
+  target_type  target_type_ext
+  target_id    String          @db.Uuid
+  action_type  action_type
+  reason       String?
+  created_at   DateTime        @default(now()) @db.Timestamp(6)
+  complaint_id String?         @db.Uuid
+  complaints   complaints?     @relation(fields: [complaint_id], references: [id], onUpdate: NoAction, map: "moderation_actions_complaint_fk")
+  users        users           @relation(fields: [moderator_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "moderation_actions_moderator_fk")
+
+  @@index([action_type], map: "idx_moderation_actions_action_type")
+  @@index([created_at], map: "idx_moderation_actions_created_at")
+  @@index([moderator_id], map: "idx_moderation_actions_moderator")
+  @@index([target_type, target_id], map: "idx_moderation_actions_target")
+}
+
+model persons {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  full_name         String              @db.VarChar(255)
+  slug              String              @unique @db.VarChar(255)
+  birth_date        DateTime?           @db.Date
+  death_date        DateTime?           @db.Date
+  bio               String?
+  status            person_status
+  created_at        DateTime            @db.Timestamp(6)
+  updated_at        DateTime            @db.Timestamp(6)
+  film_person_roles film_person_roles[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model ratings {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String   @db.Uuid
+  film_id    String   @db.Uuid
+  score      Int
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  updated_at DateTime @default(now()) @db.Timestamp(6)
+  films      films    @relation(fields: [film_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "ratings_film_fk")
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "ratings_user_fk")
+
+  @@unique([user_id, film_id], map: "ratings_user_film_unique")
+  @@index([film_id], map: "idx_ratings_film_id")
+  @@index([user_id], map: "idx_ratings_user_id")
+}
+
+model review_versions {
+  id                                                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  review_id                                           String    @db.Uuid
+  version_number                                      Int
+  title                                               String    @db.VarChar(255)
+  body                                                String
+  created_at                                          DateTime  @default(now()) @db.Timestamp(6)
+  edited_by_user_id                                   String?   @db.Uuid
+  users                                               users?    @relation(fields: [edited_by_user_id], references: [id], onUpdate: NoAction, map: "review_versions_edited_by_fk")
+  reviews_review_versions_review_idToreviews          reviews   @relation("review_versions_review_idToreviews", fields: [review_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "review_versions_review_fk")
+  reviews_reviews_current_version_idToreview_versions reviews[] @relation("reviews_current_version_idToreview_versions")
+
+  @@unique([review_id, version_number], map: "review_versions_unique_version")
+}
+
+model reviews {
+  id                                                          String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  film_id                                                     String            @db.Uuid
+  user_id                                                     String            @db.Uuid
+  status                                                      review_status     @default(visible)
+  current_version_id                                          String?           @db.Uuid
+  created_at                                                  DateTime          @default(now()) @db.Timestamp(6)
+  updated_at                                                  DateTime          @default(now()) @db.Timestamp(6)
+  comments                                                    comments[]
+  review_versions_review_versions_review_idToreviews          review_versions[] @relation("review_versions_review_idToreviews")
+  review_versions_reviews_current_version_idToreview_versions review_versions?  @relation("reviews_current_version_idToreview_versions", fields: [current_version_id], references: [id], onUpdate: NoAction, map: "reviews_current_version_fk")
+  films                                                       films             @relation(fields: [film_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "reviews_film_fk")
+  users                                                       users             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "reviews_user_fk")
+}
+
+model roles {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        code_role
+  name        String       @db.VarChar(100)
+  description String
+  user_roles  user_roles[]
+}
+
+model tags {
+  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String      @unique @db.VarChar(100)
+  slug        String      @unique @db.VarChar(100)
+  description String?
+  status      tag_status
+  created_at  DateTime    @db.Timestamp(6)
+  updated_at  DateTime    @db.Timestamp(6)
+  film_tags   film_tags[]
+}
+
+model user_list_items {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  list_id    String     @db.Uuid
+  user_id    String     @db.Uuid
+  film_id    String     @db.Uuid
+  position   Int?
+  note       String?
+  created_at DateTime   @default(now()) @db.Timestamp(6)
+  films      films      @relation(fields: [film_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_list_items_film_fk")
+  user_lists user_lists @relation(fields: [list_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_list_items_list_fk")
+  users      users      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_list_items_user_fk")
+
+  @@unique([user_id, list_id, film_id], map: "user_list_items_no_duplicates")
+  @@index([film_id], map: "idx_user_list_items_film_id")
+  @@index([list_id], map: "idx_user_list_items_list_id")
+  @@index([user_id], map: "idx_user_list_items_user_id")
+}
+
+model user_lists {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id         String            @db.Uuid
+  name            String            @db.VarChar(255)
+  type            list_type
+  is_public       Boolean           @default(false)
+  created_at      DateTime          @default(now()) @db.Timestamp(6)
+  updated_at      DateTime          @default(now()) @db.Timestamp(6)
+  user_list_items user_list_items[]
+  users           users             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_lists_user_fk")
+
+  @@unique([user_id, name], map: "user_lists_user_name_unique")
+  @@index([type], map: "idx_user_lists_type")
+  @@index([user_id], map: "idx_user_lists_user_id")
+}
+
+model user_roles {
+  user_id     String   @db.Uuid
+  role_id     String   @db.Uuid
+  assigned_at DateTime @default(now()) @db.Timestamp(6)
+  roles       roles    @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_roles_role_fk")
+  users       users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_roles_user_fk")
+
+  @@id([user_id, role_id], map: "user_roles_pk")
+  @@index([role_id], map: "idx_user_roles_role_id")
+  @@index([user_id], map: "idx_user_roles_user_id")
+}
+
+model users {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email              String               @unique @db.VarChar(255)
+  password_hash      String               @db.VarChar(255)
+  display_name       String               @db.VarChar(255)
+  status             user_status
+  created_at         DateTime             @db.Timestamp(6)
+  updated_at         DateTime             @db.Timestamp(6)
+  last_login_at      DateTime?            @db.Timestamp(6)
+  auth_sessions      auth_sessions[]
+  comments           comments[]
+  complaints         complaints[]
+  moderation_actions moderation_actions[]
+  ratings            ratings[]
+  review_versions    review_versions[]
+  reviews            reviews[]
+  user_list_items    user_list_items[]
+  user_lists         user_lists[]
+  user_roles         user_roles[]
+}
+
+enum action_type {
+  hide_review
+  unhide_review
+  hide_comment
+  unhide_comment
+  block_user
+  unblock_user
+  hide_film
+  unhide_film
+}
+
+enum code_role {
+  user
+  moderator
+  admin
+}
+
+enum comment_status {
+  visible
+  hidden
+  deleted
+}
+
+enum complaint_status {
+  pending
+  in_review
+  resolved
+  rejected
+}
+
+enum film_status {
+  visible
+  hidden
+  deleted
+}
+
+enum genre_status {
+  active
+  hidden
+  deleted
+}
+
+enum list_type {
+  watchlist
+  watched
+  custom
+}
+
+enum person_status {
+  visible
+  hidden
+  merged
+  deleted
+}
+
+enum review_status {
+  visible
+  hidden
+  deleted
+}
+
+enum role_type {
+  actor
+  director
+  writer
+  producer
+  other
+}
+
+enum tag_status {
+  active
+  hidden
+  deleted
+}
+
+enum target_type {
+  review
+  comment
+}
+
+enum target_type_ext {
+  review
+  comment
+  user
+  film
+}
+
+enum user_status {
+  active
+  blocked
+  deleted
+}
