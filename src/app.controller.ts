@@ -1,14 +1,18 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiProperty, ApiTags } from '@nestjs/swagger';
+import { HealthCheck, HealthCheckService } from '@nestjs/terminus';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { IsInt, IsString, Max, Min, MinLength } from 'class-validator';
 
 import { AppService } from './app.service';
 
+// DTO for / (hello) endpoint. Example
 class HelloResponseDto {
   @ApiProperty({ example: 'Hello World!' })
   message!: string;
 }
 
+// DTO for /echo endpoint. Example
 class EchoRequestDto {
   @ApiProperty({ example: 'Inception' })
   @IsString()
@@ -22,20 +26,32 @@ class EchoRequestDto {
   year!: number;
 }
 
+// DTO for /echo response. Example
 class EchoResponseDto {
   @ApiProperty({ example: 'Inception (2010)' })
   summary!: string;
 }
 
+@UseGuards(ThrottlerGuard) // tighter for login // throttling only inside this controller
 @ApiTags('App')
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService,
+    private readonly health: HealthCheckService,
+  ) {}
 
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Get()
   @ApiOkResponse({ type: HelloResponseDto })
   getHello(): HelloResponseDto {
     return { message: this.appService.getHello() };
+  }
+
+  @Get('health')
+  @HealthCheck()
+  healthcheck() {
+    return this.health.check([async () => ({ api: { status: 'up' } })]);
   }
 
   @Post('echo')
