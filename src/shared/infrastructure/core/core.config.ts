@@ -13,6 +13,7 @@ interface EnvType {
   // EMAIL_SERVICE: string;
   NODE_ENV: string;
   CORS_ORIGIN: string;
+  JWT_SECRET: string;
 }
 
 @Injectable()
@@ -23,6 +24,7 @@ export class CoreConfig {
   public readonly emailService: string;
   public readonly nodeEnv: 'development' | 'test' | 'production';
   public readonly corsOrigin: string;
+  public readonly jwtSecret: string;
 
   constructor(
     private configService: ConfigService<EnvType, true>,
@@ -35,6 +37,7 @@ export class CoreConfig {
       // emailService: this.configService.get('EMAIL_SERVICE'),
       nodeEnv: this.configService.get('NODE_ENV'),
       corsOrigin: this.configService.get('CORS_ORIGIN'),
+      jwtSecret: this.configService.get('JWT_SECRET'),
     } satisfies Partial<CoreConfigSchema>;
 
     const schema = plainToInstance(CoreConfigSchema, raw);
@@ -47,5 +50,6 @@ export class CoreConfig {
     // this.emailService = schema.emailService;
     this.nodeEnv = schema.nodeEnv as 'development' | 'test' | 'production';
     this.corsOrigin = schema.corsOrigin;
+    this.jwtSecret = schema.jwtSecret;
   }
 }

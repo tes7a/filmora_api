@@ -18,4 +18,7 @@ export class CoreConfigSchema {
 
   @IsString({ message: 'Set env variable CORS_ORIGIN' })
   corsOrigin!: string;
+
+  @IsString({ message: 'Set env variable JWT_SECRET' })
+  jwtSecret!: string;
 }
