@@ -8,14 +8,32 @@ BEGIN
   END LOOP;
 END $$;
 
--- Optional: block direct access for anon/authenticated (leave DB access only to backend/service role)
-REVOKE ALL ON SCHEMA public FROM anon, authenticated;
-GRANT USAGE ON SCHEMA public TO anon, authenticated;
+-- Optional: Supabase-only hardening.
+-- In local/dev Postgres these roles usually don't exist, so we guard the statements.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+    EXECUTE 'REVOKE ALL ON SCHEMA public FROM anon';
+    EXECUTE 'GRANT USAGE ON SCHEMA public TO anon';
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+    EXECUTE 'REVOKE ALL ON SCHEMA public FROM authenticated';
+    EXECUTE 'GRANT USAGE ON SCHEMA public TO authenticated';
+  END IF;
+END $$;
+
 
 DO $$
 DECLARE r RECORD;
 BEGIN
   FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
-    EXECUTE format('REVOKE ALL ON TABLE public.%I FROM anon, authenticated;', r.tablename);
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+      EXECUTE format('REVOKE ALL ON TABLE public.%I FROM anon;', r.tablename);
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+      EXECUTE format('REVOKE ALL ON TABLE public.%I FROM authenticated;', r.tablename);
+    END IF;
   END LOOP;
 END $$;

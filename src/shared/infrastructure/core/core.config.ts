@@ -14,6 +14,8 @@ interface EnvType {
   NODE_ENV: string;
   CORS_ORIGIN: string;
   JWT_SECRET: string;
+  ACCESS_TOKEN_EXPIRES_IN: string;
+  REFRESH_TOKEN_EXPIRES_IN: number;
 }
 
 @Injectable()
@@ -25,6 +27,9 @@ export class CoreConfig {
   public readonly nodeEnv: 'development' | 'test' | 'production';
   public readonly corsOrigin: string;
   public readonly jwtSecret: string;
+  public readonly refreshTokenCookieMaxAge: number;
+  public readonly accessTokenExpiresIn: string;
+  public readonly refreshTokenExpiresIn: number;
 
   constructor(
     private configService: ConfigService<EnvType, true>,
@@ -38,6 +43,10 @@ export class CoreConfig {
       nodeEnv: this.configService.get('NODE_ENV'),
       corsOrigin: this.configService.get('CORS_ORIGIN'),
       jwtSecret: this.configService.get('JWT_SECRET'),
+      accessTokenExpiresIn: this.configService.get('ACCESS_TOKEN_EXPIRES_IN'),
+      refreshTokenExpiresIn: Number(
+        this.configService.get('REFRESH_TOKEN_EXPIRES_IN'),
+      ),
     } satisfies Partial<CoreConfigSchema>;
 
     const schema = plainToInstance(CoreConfigSchema, raw);
@@ -51,5 +60,7 @@ export class CoreConfig {
     this.nodeEnv = schema.nodeEnv as 'development' | 'test' | 'production';
     this.corsOrigin = schema.corsOrigin;
     this.jwtSecret = schema.jwtSecret;
+    this.accessTokenExpiresIn = schema.accessTokenExpiresIn;
+    this.refreshTokenCookieMaxAge = schema.refreshTokenExpiresIn;
   }
 }

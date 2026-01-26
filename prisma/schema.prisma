@@ -1,6 +1,5 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -404,4 +403,5 @@ enum user_status {
   active
   blocked
   deleted
+  pending
 }

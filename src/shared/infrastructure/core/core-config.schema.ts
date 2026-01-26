@@ -21,4 +21,13 @@ export class CoreConfigSchema {
 
   @IsString({ message: 'Set env variable JWT_SECRET' })
   jwtSecret!: string;
+
+  @IsString({ message: 'Set env variable ACCESS_TOKEN_EXPIRES_IN' })
+  accessTokenExpiresIn!: string;
+
+  @IsNumber(
+    { allowInfinity: false, allowNaN: false },
+    { message: 'Set env variable REFRESH_TOKEN_EXPIRES_IN' },
+  )
+  refreshTokenExpiresIn!: number;
 }

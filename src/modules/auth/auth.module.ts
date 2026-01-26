@@ -5,13 +5,23 @@ import { PassportModule } from '@nestjs/passport';
 import { CoreConfig } from '@/shared';
 
 import {
+  AuthLocalService,
+  EmailConfirmationService,
+  UserRegistrationService,
+} from './application';
+import {
+  AUTH_REPOSITORY,
+  BcryptPasswordHasher,
+  JwtTokenService,
+  PASSWORD_HASHER,
+  PrismaAuthRepository,
+} from './infrastructure';
+import {
   AuthController,
   JwtAuthGuard,
   JwtStrategy,
   LocalAuthGuard,
 } from './presentation';
-
-const expiresIn = '60s';
 
 @Module({
   controllers: [AuthController],
@@ -22,12 +32,33 @@ const expiresIn = '60s';
       useFactory: (coreConfig: CoreConfig) => ({
         secret: coreConfig.jwtSecret,
         signOptions: {
-          expiresIn,
+          expiresIn: coreConfig.accessTokenExpiresIn as ms.StringValue,
         },
       }),
     }),
   ],
-  providers: [JwtAuthGuard, LocalAuthGuard, JwtStrategy],
+  providers: [
+    // Guards & Strategies
+    JwtAuthGuard,
+    LocalAuthGuard,
+    JwtStrategy,
+
+    // Infrastructure
+    JwtTokenService,
+    {
+      provide: PASSWORD_HASHER,
+      useClass: BcryptPasswordHasher,
+    },
+    {
+      provide: AUTH_REPOSITORY,
+      useClass: PrismaAuthRepository,
+    },
+
+    // Application Services
+    AuthLocalService,
+    EmailConfirmationService,
+    UserRegistrationService,
+  ],
   exports: [JwtAuthGuard],
 })
 export class AuthModule {}

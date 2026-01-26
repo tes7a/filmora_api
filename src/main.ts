@@ -1,6 +1,7 @@
 import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { PinoLogger } from 'nestjs-pino';
 
@@ -47,6 +48,9 @@ async function bootstrap() {
 
   // Gzip/br compression
   app.use(compression());
+
+  // Cookie parser for refresh tokens
+  app.use(cookieParser());
 
   // CORS (configure origins via env)
   // Example: CORS_ORIGIN=http://localhost:3000,http://localhost:3001
