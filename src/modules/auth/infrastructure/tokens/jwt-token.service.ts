@@ -17,20 +17,21 @@ export interface TokenPair {
 
 @Injectable()
 export class JwtTokenService {
-  private readonly ACCESS_TOKEN_EXPIRES_IN;
-  private readonly REFRESH_TOKEN_EXPIRES_IN;
+  private readonly ACCESS_TOKEN_EXPIRES_IN: string;
+  private readonly REFRESH_TOKEN_EXPIRES_IN: number;
 
   constructor(
     private readonly jwtService: JwtService,
     private readonly coreConfig: CoreConfig,
   ) {
-    this.ACCESS_TOKEN_EXPIRES_IN = this.coreConfig.accessTokenExpiresIn;
-    this.REFRESH_TOKEN_EXPIRES_IN = this.coreConfig.refreshTokenExpiresIn;
+    this.ACCESS_TOKEN_EXPIRES_IN =
+      this.coreConfig.accessTokenExpiresIn || '15m';
+    this.REFRESH_TOKEN_EXPIRES_IN = this.coreConfig.refreshTokenExpiresIn || 7; // 7 days default
   }
 
   async generateTokenPair(payload: TokenPayload): Promise<TokenPair> {
     const accessToken = await this.jwtService.signAsync(payload, {
-      expiresIn: this.ACCESS_TOKEN_EXPIRES_IN,
+      expiresIn: this.ACCESS_TOKEN_EXPIRES_IN as ms.StringValue,
     });
 
     const refreshToken = randomBytes(64).toString('hex');

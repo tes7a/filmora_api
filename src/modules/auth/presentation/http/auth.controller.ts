@@ -60,19 +60,20 @@ export class AuthController {
   ) {
     const refreshToken = req.cookies?.refreshToken;
 
-    const result = await this.authLocalService.refreshTokens(refreshToken, res, {
-      ip,
-      userAgent: req.headers['user-agent'],
-    });
+    const result = await this.authLocalService.refreshTokens(
+      refreshToken,
+      res,
+      {
+        ip,
+        userAgent: req.headers['user-agent'],
+      },
+    );
 
     return result;
   }
 
   @Post(ROUTES.AUTH_LOGOUT)
-  async logout(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ) {
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const refreshToken = req.cookies?.refreshToken;
 
     await this.authLocalService.logout(refreshToken, res);
