@@ -9,7 +9,7 @@ import type { Request, Response } from 'express';
 import { PinoLogger } from 'nestjs-pino';
 
 @Catch()
-class AllExceptionsFilter implements ExceptionFilter {
+export class AllExceptionsFilter implements ExceptionFilter {
   constructor(private readonly logger: PinoLogger) {}
 
   catch(exception: unknown, host: ArgumentsHost) {
@@ -70,4 +70,3 @@ class AllExceptionsFilter implements ExceptionFilter {
     res.status(status).json(payload);
   }
 }
-export { AllExceptionsFilter };

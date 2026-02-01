@@ -13,6 +13,14 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/filmora?schema=public
+      DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/filmora?schema=public
+      JWT_SECRET: test-secret
+      ACCESS_TOKEN_EXPIRES_IN: 7d
+      REFRESH_TOKEN_EXPIRES_IN: 7d
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,7 +28,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10.7.1
           run_install: false
 
       - name: Setup Node
@@ -32,6 +40,11 @@ jobs:
       - name: Install deps
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma Client
+        run: pnpm prisma generate
+        env:
+          DIRECT_URL: 'postgresql://user:pass@localhost:5432/db'
+
       - name: Lint
         run: pnpm lint
 
@@ -39,4 +52,4 @@ jobs:
         run: pnpm typecheck
 
       - name: Unit tests
-        run: pnpm test -- --runInBand
+        run: pnpm test --runInBand
