@@ -1,4 +1,4 @@
-import { IsNumber, IsString } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CoreConfigSchema {
   @IsNumber({}, { message: 'Set env variable PORT' })
@@ -6,12 +6,6 @@ export class CoreConfigSchema {
 
   @IsString({ message: 'Set env variable DATABASE_URL' })
   databaseUrl!: string;
-
-  // @IsString()
-  // emailPassword!: string;
-
-  // @IsString()
-  // emailService!: string;
 
   @IsString()
   nodeEnv!: string;
@@ -30,4 +24,37 @@ export class CoreConfigSchema {
     { message: 'Set env variable REFRESH_TOKEN_EXPIRES_IN' },
   )
   refreshTokenExpiresIn!: number;
+
+  // SMTP Configuration
+  @IsOptional()
+  @IsString()
+  smtpHost?: string;
+
+  @IsOptional()
+  @IsNumber()
+  smtpPort?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  smtpSecure?: boolean;
+
+  @IsOptional()
+  @IsString()
+  smtpUser?: string;
+
+  @IsOptional()
+  @IsString()
+  smtpPassword?: string;
+
+  @IsOptional()
+  @IsString()
+  emailFromName?: string;
+
+  @IsOptional()
+  @IsString()
+  emailFromAddress?: string;
+
+  @IsOptional()
+  @IsString()
+  clientUrl?: string;
 }
