@@ -5,7 +5,7 @@ import { randomUUID } from 'crypto';
 import { LoggerModule } from 'nestjs-pino';
 
 import { AuthModule } from '@/modules';
-import { CoreModule, PrismaModule } from '@/shared';
+import { CoreModule, EmailModule, PrismaModule } from '@/shared';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -52,6 +52,7 @@ import { AppService } from './app.service';
 
     // Other modules go here
     CoreModule,
+    EmailModule,
     PrismaModule,
     AuthModule,
   ],

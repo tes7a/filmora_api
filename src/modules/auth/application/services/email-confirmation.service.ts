@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 
-import { CoreConfig } from '@/shared';
+import { CoreConfig, EmailService } from '@/shared';
 
 import type { AuthRepository } from '../../infrastructure';
 import { AUTH_REPOSITORY, JwtTokenService } from '../../infrastructure';
@@ -14,29 +14,26 @@ export class EmailConfirmationService {
     private readonly authRepository: AuthRepository,
     private readonly jwtTokenService: JwtTokenService,
     private readonly coreConfig: CoreConfig,
+    private readonly emailService: EmailService,
   ) {}
 
   async sendConfirmationEmail(userId: string, email: string): Promise<void> {
     const token =
       await this.jwtTokenService.generateEmailConfirmationToken(userId);
 
-    // TODO: Заменить на URL клиента с query параметром после настройки фронтенда
-    // Пример: `${clientUrl}/confirm-email?token=${token}`
     const confirmationUrl = this.buildConfirmationUrl(token);
 
-    // TODO: Подключить реальный email сервис (nodemailer, sendgrid, etc.)
-    // Пока просто логируем для разработки
-    this.logger.log(`
-      ========== EMAIL CONFIRMATION ==========
-      To: ${email}
-      Subject: Подтвердите ваш email
+    const sent = await this.emailService.sendConfirmationEmail(
+      email,
+      confirmationUrl,
+    );
 
-      Для подтверждения email перейдите по ссылке:
-      ${confirmationUrl}
-
-      Ссылка действительна 24 часа.
-      =========================================
-    `);
+    if (sent) {
+      this.logger.log(`Confirmation email sent to ${email}`);
+    } else {
+      this.logger.warn(`Failed to send confirmation email to ${email}`);
+      this.logger.log(`Confirmation URL: ${confirmationUrl}`);
+    }
   }
 
   async confirmEmail(
@@ -68,11 +65,6 @@ export class EmailConfirmationService {
   }
 
   private buildConfirmationUrl(token: string): string {
-    // TODO: Изменить на CLIENT_URL когда будет готов фронтенд
-    // return `${this.coreConfig.clientUrl}/confirm-email?token=${token}`;
-
-    // Временно используем API URL для подтверждения
-    const apiBaseUrl = `http://localhost:${this.coreConfig.port}`;
-    return `${apiBaseUrl}/auth/confirm-email?token=${token}`;
+    return `${this.coreConfig.clientUrl}/confirm-email?token=${token}`;
   }
 }
