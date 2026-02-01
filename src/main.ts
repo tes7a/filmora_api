@@ -1,10 +1,11 @@
 import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
-import { ThrottlerModule } from '@nestjs/throttler';
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { PinoLogger } from 'nestjs-pino';
 
+import { CoreConfig } from '@/shared';
 import { AllExceptionsFilter } from '@/utils';
 
 import { AppModule } from './app.module';
@@ -14,6 +15,7 @@ async function bootstrap() {
 
   // Use nestjs-pino Logger (singleton, implements LoggerService)
   const pinoLogger = await app.resolve(PinoLogger);
+  const coreConfig = app.get(CoreConfig);
 
   // ValidationPipe globally
   app.useGlobalPipes(
@@ -47,10 +49,13 @@ async function bootstrap() {
   // Gzip/br compression
   app.use(compression());
 
+  // Cookie parser for refresh tokens
+  app.use(cookieParser());
+
   // CORS (configure origins via env)
   // Example: CORS_ORIGIN=http://localhost:3000,http://localhost:3001
-  const origins = process.env.CORS_ORIGIN
-    ? process.env.CORS_ORIGIN.split(',').map((s) => s.trim())
+  const origins = coreConfig.corsOrigin
+    ? coreConfig.corsOrigin.split(',').map((s) => s.trim())
     : true; // dev: allow all
 
   app.enableCors({
@@ -61,13 +66,12 @@ async function bootstrap() {
     exposedHeaders: ['X-Request-Id'],
   });
 
-  const port = process.env.PORT ? Number(process.env.PORT) : 3000;
+  const port = coreConfig.port;
+  const env = coreConfig.nodeEnv;
+
   await app.listen(port);
 
-  pinoLogger.info(
-    { port, env: process.env.NODE_ENV ?? 'development' },
-    'API started',
-  );
+  pinoLogger.info({ port, env }, 'API started');
 }
 
 void bootstrap();
