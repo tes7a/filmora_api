@@ -7,6 +7,7 @@ import {
   Query,
   Req,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
@@ -17,7 +18,9 @@ import {
   EmailConfirmationService,
   UserRegistrationService,
 } from '../../application';
-import { LoginDto, RegisterDto } from '../dto';
+import type { AuthenticatedUser, UserWithRoles } from '../../infrastructure';
+import { RegisterDto } from '../dto';
+import { JwtAuthGuard, LocalAuthGuard } from '../guards';
 
 @Controller(ROUTES.AUTH)
 export class AuthController {
@@ -27,19 +30,19 @@ export class AuthController {
     private readonly emailConfirmationService: EmailConfirmationService,
   ) {}
 
+  @UseGuards(LocalAuthGuard)
   @Post(ROUTES.AUTH_LOGIN)
   async login(
-    @Body() body: LoginDto,
     @Res({ passthrough: true }) res: Response,
     @Ip() ip: string,
     @Req() req: Request,
   ) {
-    const result = await this.authLocalService.login(body, res, {
+    const user = req.user as UserWithRoles;
+
+    return this.authLocalService.login(user, res, {
       ip,
       userAgent: req.headers['user-agent'],
     });
-
-    return result;
   }
 
   @Post(ROUTES.AUTH_REGISTER)
@@ -79,5 +82,11 @@ export class AuthController {
     await this.authLocalService.logout(refreshToken, res);
 
     return { message: 'Logged out successfully' };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(ROUTES.AUTH_ME)
+  me(@Req() req: Request): AuthenticatedUser {
+    return req.user as AuthenticatedUser;
   }
 }

@@ -30,6 +30,19 @@ export interface UserWithRoles {
   }>;
 }
 
+export interface JwtPayload {
+  sub: string;
+  email: string;
+}
+
+export interface AuthenticatedUser {
+  id: string;
+  email: string;
+  status: user_status;
+  role: string;
+  displayName: string;
+}
+
 export interface AuthRepository {
   findUserByEmail(email: string): Promise<UserWithRoles | null>;
   findUserById(id: string): Promise<UserWithRoles | null>;

@@ -21,6 +21,7 @@ import {
   JwtAuthGuard,
   JwtStrategy,
   LocalAuthGuard,
+  LocalStrategy,
 } from './presentation';
 
 @Module({
@@ -42,6 +43,7 @@ import {
     JwtAuthGuard,
     LocalAuthGuard,
     JwtStrategy,
+    LocalStrategy,
 
     // Infrastructure
     JwtTokenService,
