@@ -33,7 +33,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (typeof responseBody === 'string') {
       message = responseBody;
     } else if (responseBody && typeof responseBody === 'object') {
-      const rb = responseBody as any;
+      const rb = responseBody as { message?: string; error?: string };
       if (rb.message) message = rb.message;
       if (rb.error) error = rb.error;
     } else if (exception instanceof Error) {

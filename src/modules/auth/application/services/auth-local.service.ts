@@ -1,17 +1,16 @@
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Response } from 'express';
 
-import type { AuthRepository, PasswordHasher } from '../../infrastructure';
+import type {
+  AuthRepository,
+  PasswordHasher,
+  UserWithRoles,
+} from '../../infrastructure';
 import {
   AUTH_REPOSITORY,
   JwtTokenService,
   PASSWORD_HASHER,
 } from '../../infrastructure';
-
-export interface LoginDto {
-  email: string;
-  password: string;
-}
 
 export interface LoginResult {
   accessToken: string;
@@ -61,16 +60,10 @@ export class AuthLocalService {
   }
 
   async login(
-    dto: LoginDto,
+    user: UserWithRoles,
     res: Response,
     meta: RequestMeta,
   ): Promise<LoginResult> {
-    const user = await this.validateUser(dto.email, dto.password);
-
-    if (!user) {
-      throw new UnauthorizedException('Invalid email or password');
-    }
-
     if (user.status === 'pending') {
       throw new UnauthorizedException(
         'Please confirm your email before logging in',

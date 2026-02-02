@@ -5,4 +5,5 @@ export enum ROUTES {
   AUTH_CONFIRM_EMAIL = 'confirm-email',
   AUTH_REFRESH = 'refresh',
   AUTH_LOGOUT = 'logout',
+  AUTH_ME = 'me',
 }
