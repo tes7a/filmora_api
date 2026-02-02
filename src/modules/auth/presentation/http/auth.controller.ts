@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -9,6 +10,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 
 import { ROUTES } from '@/utils';
@@ -23,6 +25,8 @@ import { RegisterDto } from '../dto';
 import { JwtAuthGuard, LocalAuthGuard } from '../guards';
 
 @Controller(ROUTES.AUTH)
+@UseGuards(ThrottlerGuard)
+@Throttle({ default: { limit: 5, ttl: 60000 } })
 export class AuthController {
   constructor(
     private readonly authLocalService: AuthLocalService,
@@ -63,6 +67,10 @@ export class AuthController {
   ) {
     const refreshToken = req.cookies?.refreshToken;
 
+    if (!refreshToken) {
+      throw new BadRequestException('Refresh token not found');
+    }
+
     const result = await this.authLocalService.refreshTokens(
       refreshToken,
       res,
@@ -79,12 +87,17 @@ export class AuthController {
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const refreshToken = req.cookies?.refreshToken;
 
+    if (!refreshToken) {
+      throw new BadRequestException('Refresh token not found');
+    }
+
     await this.authLocalService.logout(refreshToken, res);
 
     return { message: 'Logged out successfully' };
   }
 
   @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @Get(ROUTES.AUTH_ME)
   me(@Req() req: Request): AuthenticatedUser {
     return req.user as AuthenticatedUser;

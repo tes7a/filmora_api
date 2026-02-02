@@ -26,6 +26,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
+    const isSessionActive = await this.authRepository.isSessionActive(
+      payload.sessionId,
+    );
+
+    if (!isSessionActive) {
+      throw new UnauthorizedException('Session has been revoked');
+    }
+
     const user = await this.authRepository.findUserById(payload.sub);
 
     if (!user) {

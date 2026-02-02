@@ -3,13 +3,10 @@ import { user_status } from '@prisma/client';
 
 import type { AuthRepository, PasswordHasher } from '../../infrastructure';
 import { AUTH_REPOSITORY, PASSWORD_HASHER } from '../../infrastructure';
+import type { RegisterUserDto } from '../dto';
 import { EmailConfirmationService } from './email-confirmation.service';
 
-export interface RegisterUserDto {
-  email: string;
-  password: string;
-  displayName: string;
-}
+export type { RegisterUserDto } from '../dto';
 
 @Injectable()
 export class UserRegistrationService {

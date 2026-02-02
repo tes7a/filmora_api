@@ -11,21 +11,9 @@ import {
   JwtTokenService,
   PASSWORD_HASHER,
 } from '../../infrastructure';
+import type { LoginResult, RequestMeta } from '../dto';
 
-export interface LoginResult {
-  accessToken: string;
-  user: {
-    id: string;
-    email: string;
-    displayName: string;
-    roles: string[];
-  };
-}
-
-export interface RequestMeta {
-  ip?: string;
-  userAgent?: string;
-}
+export type { LoginResult, RequestMeta } from '../dto';
 
 @Injectable()
 export class AuthLocalService {
@@ -79,19 +67,21 @@ export class AuthLocalService {
     }
 
     const roles = user.userRoles.map((ur) => ur.roles.code);
+    const refreshToken = this.jwtTokenService.generateRefreshToken();
 
-    const tokenPair = await this.jwtTokenService.generateTokenPair({
+    const session = await this.createSession(user.id, refreshToken, meta);
+
+    const accessToken = await this.jwtTokenService.generateAccessToken({
       sub: user.id,
       email: user.email,
       roles,
+      sessionId: session.id,
     });
 
-    await this.createSession(user.id, tokenPair.refreshToken, meta);
-
-    this.setRefreshTokenCookie(res, tokenPair.refreshToken);
+    this.setRefreshTokenCookie(res, refreshToken);
 
     return {
-      accessToken: tokenPair.accessToken,
+      accessToken,
       user: {
         id: user.id,
         email: user.email,
@@ -106,53 +96,60 @@ export class AuthLocalService {
     res: Response,
     meta: RequestMeta,
   ): Promise<{ accessToken: string }> {
-    const session =
+    const oldSession =
       await this.authRepository.findSessionByRefreshToken(refreshToken);
 
-    if (!session || session.revokedAt || session.expiresAt < new Date()) {
+    if (
+      !oldSession ||
+      oldSession.revokedAt ||
+      oldSession.expiresAt < new Date()
+    ) {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
-    const user = await this.authRepository.findUserById(session.userId);
+    const user = await this.authRepository.findUserById(oldSession.userId);
 
     if (!user || user.status !== 'active') {
       throw new UnauthorizedException('User not found or inactive');
     }
 
-    await this.authRepository.revokeSession(session.id);
+    await this.authRepository.revokeSession(oldSession.id);
 
     const roles = user.userRoles.map((ur) => ur.roles.code);
+    const newRefreshToken = this.jwtTokenService.generateRefreshToken();
 
-    const tokenPair = await this.jwtTokenService.generateTokenPair({
+    const newSession = await this.createSession(user.id, newRefreshToken, meta);
+
+    const accessToken = await this.jwtTokenService.generateAccessToken({
       sub: user.id,
       email: user.email,
       roles,
+      sessionId: newSession.id,
     });
 
-    await this.createSession(user.id, tokenPair.refreshToken, meta);
+    this.setRefreshTokenCookie(res, newRefreshToken);
 
-    this.setRefreshTokenCookie(res, tokenPair.refreshToken);
-
-    return { accessToken: tokenPair.accessToken };
+    return { accessToken };
   }
 
-  async logout(refreshToken: string, res: Response): Promise<void> {
-    const session =
-      await this.authRepository.findSessionByRefreshToken(refreshToken);
+  async logout(refreshToken: string | undefined, res: Response): Promise<void> {
+    if (refreshToken) {
+      const session =
+        await this.authRepository.findSessionByRefreshToken(refreshToken);
 
-    if (session) {
-      await this.authRepository.revokeSession(session.id);
+      if (session) {
+        await this.authRepository.revokeSession(session.id);
+        res.clearCookie(this.REFRESH_TOKEN_COOKIE_NAME);
+      }
     }
-
-    res.clearCookie(this.REFRESH_TOKEN_COOKIE_NAME);
   }
 
   private async createSession(
     userId: string,
     refreshToken: string,
     meta: RequestMeta,
-  ): Promise<void> {
-    await this.authRepository.createSession({
+  ): Promise<{ id: string }> {
+    return this.authRepository.createSession({
       userId,
       refreshToken,
       expiresAt: this.jwtTokenService.getRefreshTokenExpiresAt(),

@@ -168,6 +168,17 @@ export class PrismaAuthRepository implements AuthRepository {
     };
   }
 
+  async isSessionActive(sessionId: string): Promise<boolean> {
+    const session = await this.prisma.auth_sessions.findUnique({
+      where: { id: sessionId },
+      select: { revoked_at: true, expires_at: true },
+    });
+
+    if (!session) return false;
+
+    return session.revoked_at === null && session.expires_at > new Date();
+  }
+
   async revokeSession(sessionId: string): Promise<void> {
     await this.prisma.auth_sessions.update({
       where: { id: sessionId },
