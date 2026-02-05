@@ -38,6 +38,6 @@ export interface AuthenticatedUser {
   id: string;
   email: string;
   status: user_status;
-  role: string;
+  roles: string[];
   displayName: string;
 }
