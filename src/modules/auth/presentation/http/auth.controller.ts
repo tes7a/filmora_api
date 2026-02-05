@@ -21,8 +21,9 @@ import {
   UserRegistrationService,
 } from '../../application';
 import type { AuthenticatedUser, UserWithRoles } from '../../infrastructure';
+import { Roles } from '../decorators';
 import { RegisterDto } from '../dto';
-import { JwtAuthGuard, LocalAuthGuard } from '../guards';
+import { JwtAuthGuard, LocalAuthGuard, RolesGuard } from '../guards';
 
 @Controller(ROUTES.AUTH)
 @UseGuards(ThrottlerGuard)
@@ -96,7 +97,8 @@ export class AuthController {
     return { message: 'Logged out successfully' };
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('user', 'moderator', 'admin')
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   @Get(ROUTES.AUTH_ME)
   me(@Req() req: Request): AuthenticatedUser {
