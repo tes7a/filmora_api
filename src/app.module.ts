@@ -4,7 +4,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { randomUUID } from 'crypto';
 import { LoggerModule } from 'nestjs-pino';
 
-import { AuthModule } from '@/modules';
+import { AdminModule, AuthModule } from '@/modules';
 import { CoreModule, EmailModule, PrismaModule } from '@/shared';
 
 import { AppController } from './app.controller';
@@ -14,6 +14,19 @@ import { AppService } from './app.service';
   imports: [
     LoggerModule.forRoot({
       pinoHttp: {
+        transport:
+          process.env.NODE_ENV === 'production'
+            ? undefined
+            : {
+                target: 'pino-pretty',
+                options: {
+                  colorize: true,
+                  singleLine: true,
+                  translateTime: 'yyyy-mm-dd HH:MM:ss.l',
+                  ignore:
+                    'pid,hostname,req.headers,res.headers,req.remoteAddress,req.remotePort',
+                },
+              },
         genReqId: (req) => {
           const incoming = req.headers['x-request-id'];
           const id = Array.isArray(incoming) ? incoming[0] : incoming;
@@ -24,6 +37,16 @@ import { AppService } from './app.service';
         customProps: (req) => ({
           requestId: req.id,
         }),
+        serializers: {
+          req: (req) => ({
+            id: req.id,
+            method: req.method,
+            url: req.url,
+          }),
+          res: (res) => ({
+            statusCode: res.statusCode,
+          }),
+        },
         level:
           process.env.NODE_ENV === 'production'
             ? 'info'
@@ -55,6 +78,7 @@ import { AppService } from './app.service';
     EmailModule,
     PrismaModule,
     AuthModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],
