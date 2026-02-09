@@ -6,4 +6,7 @@ export enum ROUTES {
   AUTH_REFRESH = 'refresh',
   AUTH_LOGOUT = 'logout',
   AUTH_ME = 'me',
+
+  ADMIN = 'admin',
+  ADMIN_USERS = 'users',
 }
