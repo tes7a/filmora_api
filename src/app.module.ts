@@ -8,7 +8,6 @@ import { AdminModule, AuthModule } from '@/modules';
 import { CoreModule, EmailModule, PrismaModule } from '@/shared';
 
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
 
 @Module({
   imports: [
@@ -81,6 +80,6 @@ import { AppService } from './app.service';
     AdminModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [],
 })
 export class AppModule {}

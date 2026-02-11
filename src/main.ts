@@ -4,6 +4,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
@@ -55,6 +56,15 @@ async function bootstrap() {
   app.use(compression());
 
   app.use(cookieParser());
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Filmora API')
+    .setDescription('Film catalog backend API')
+    .setVersion('1.0.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api/docs', app, document);
 
   const origins = coreConfig.corsOrigin
     ? coreConfig.corsOrigin.split(',').map((s) => s.trim())

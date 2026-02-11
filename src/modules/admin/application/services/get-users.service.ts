@@ -3,7 +3,8 @@ import { Inject, Injectable } from '@nestjs/common';
 import {
   ADMIN_REPOSITORY,
   type AdminRepository,
-  type AdminUserDto,
+  type GetUsersParams,
+  type PaginatedAdminUsersDto,
 } from '../../infrastructure';
 
 @Injectable()
@@ -13,7 +14,7 @@ export class GetUsersService {
     private readonly adminRepository: AdminRepository,
   ) {}
 
-  async execute(excludeUserId: string): Promise<AdminUserDto[]> {
-    return this.adminRepository.getUsers(excludeUserId);
+  async execute(params: GetUsersParams): Promise<PaginatedAdminUsersDto> {
+    return this.adminRepository.getUsers(params);
   }
 }
