@@ -10,6 +10,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 
@@ -26,6 +27,7 @@ import { RegisterDto } from '../dto';
 import { JwtAuthGuard, LocalAuthGuard, RolesGuard } from '../guards';
 
 @Controller(ROUTES.AUTH)
+@ApiTags('Auth')
 @UseGuards(ThrottlerGuard)
 @Throttle({ default: { limit: 5, ttl: 60000 } })
 export class AuthController {
@@ -37,6 +39,7 @@ export class AuthController {
 
   @UseGuards(LocalAuthGuard)
   @Post(ROUTES.AUTH_LOGIN)
+  @ApiOperation({ summary: 'Login' })
   async login(
     @Res({ passthrough: true }) res: Response,
     @Ip() ip: string,
@@ -51,16 +54,20 @@ export class AuthController {
   }
 
   @Post(ROUTES.AUTH_REGISTER)
+  @ApiOperation({ summary: 'Register' })
+  @ApiBody({ type: RegisterDto })
   async register(@Body() body: RegisterDto) {
     return this.userRegistrationService.register(body);
   }
 
   @Get(ROUTES.AUTH_CONFIRM_EMAIL)
+  @ApiOperation({ summary: 'Confirm email' })
   async confirmEmail(@Query('token') token: string) {
     return this.emailConfirmationService.confirmEmail(token);
   }
 
   @Post(ROUTES.AUTH_REFRESH)
+  @ApiOperation({ summary: 'Refresh tokens' })
   async refresh(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -85,6 +92,7 @@ export class AuthController {
   }
 
   @Post(ROUTES.AUTH_LOGOUT)
+  @ApiOperation({ summary: 'Logout' })
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const refreshToken = req.cookies?.refreshToken;
 
@@ -101,6 +109,8 @@ export class AuthController {
   @Roles('user', 'moderator', 'admin')
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   @Get(ROUTES.AUTH_ME)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current user' })
   me(@Req() req: Request): AuthenticatedUser {
     return req.user as AuthenticatedUser;
   }
