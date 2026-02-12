@@ -1,7 +1,17 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOkResponse, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
 import { HealthCheck, HealthCheckService } from '@nestjs/terminus';
 import { ThrottlerGuard } from '@nestjs/throttler';
+
+class HealthIndicatorResponseDto {
+  @ApiProperty({ example: 'up' })
+  status: string;
+}
+
+class HealthCheckResponseDto {
+  @ApiProperty({ type: HealthIndicatorResponseDto })
+  api: HealthIndicatorResponseDto;
+}
 
 @UseGuards(ThrottlerGuard)
 @ApiTags('App')
@@ -12,6 +22,7 @@ export class AppController {
   @Get('health')
   @HealthCheck()
   @ApiOperation({ summary: 'Health check' })
+  @ApiOkResponse({ type: HealthCheckResponseDto })
   healthcheck() {
     return this.health.check([async () => ({ api: { status: 'up' } })]);
   }
