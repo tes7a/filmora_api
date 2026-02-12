@@ -11,4 +11,6 @@ export enum ROUTES {
   ADMIN_USERS = 'users',
   ADMIN_USER_STATUS = 'users/:userId/status',
   ADMIN_USER_ROLE = 'users/:userId/roles',
+
+  FILMS = 'films',
 }
