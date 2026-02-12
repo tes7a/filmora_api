@@ -1,4 +1,4 @@
-import { TerminusModule } from '@nestjs/terminus';
+import { HealthCheckService } from '@nestjs/terminus';
 import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -6,7 +6,6 @@ import { randomUUID } from 'crypto';
 import { LoggerModule } from 'nestjs-pino';
 
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
 
 describe('AppController', () => {
   let appController: AppController;
@@ -50,18 +49,26 @@ describe('AppController', () => {
             },
           ],
         }),
-        TerminusModule,
       ],
       controllers: [AppController],
-      providers: [AppService],
+      providers: [
+        {
+          provide: HealthCheckService,
+          useValue: {
+            check: jest.fn().mockResolvedValue({ api: { status: 'up' } }),
+          },
+        },
+      ],
     }).compile();
 
     appController = app.get<AppController>(AppController);
   });
 
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toEqual({ message: 'Hello World!' });
+  describe('health', () => {
+    it('should return health status', async () => {
+      await expect(appController.healthcheck()).resolves.toEqual({
+        api: { status: 'up' },
+      });
     });
   });
 });

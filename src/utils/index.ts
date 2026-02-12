@@ -1,3 +1,3 @@
-export * from './all_exceptions_filter.service';
-export * from './config_validation_utility';
+export * from './all-exceptions-filter.service';
+export * from './config-validation-utility';
 export * from './routes.enum';

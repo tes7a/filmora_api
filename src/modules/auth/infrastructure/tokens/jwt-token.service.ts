@@ -4,16 +4,9 @@ import { randomBytes } from 'crypto';
 
 import { CoreConfig } from '@/shared';
 
-export interface TokenPayload {
-  sub: string;
-  email: string;
-  roles: string[];
-}
+import type { TokenPayload } from '../dto';
 
-export interface TokenPair {
-  accessToken: string;
-  refreshToken: string;
-}
+export type { TokenPayload } from '../dto';
 
 @Injectable()
 export class JwtTokenService {
@@ -29,14 +22,14 @@ export class JwtTokenService {
     this.REFRESH_TOKEN_EXPIRES_IN = this.coreConfig.refreshTokenExpiresIn || 7; // 7 days default
   }
 
-  async generateTokenPair(payload: TokenPayload): Promise<TokenPair> {
-    const accessToken = await this.jwtService.signAsync(payload, {
+  async generateAccessToken(payload: TokenPayload): Promise<string> {
+    return this.jwtService.signAsync(payload, {
       expiresIn: this.ACCESS_TOKEN_EXPIRES_IN as ms.StringValue,
     });
+  }
 
-    const refreshToken = randomBytes(64).toString('hex');
-
-    return { accessToken, refreshToken };
+  generateRefreshToken(): string {
+    return randomBytes(64).toString('hex');
   }
 
   async generateEmailConfirmationToken(userId: string): Promise<string> {

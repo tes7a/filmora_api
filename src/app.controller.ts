@@ -1,63 +1,29 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
-import { ApiBody, ApiOkResponse, ApiProperty, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { ApiOkResponse, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
 import { HealthCheck, HealthCheckService } from '@nestjs/terminus';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
-import { IsInt, IsString, Max, Min, MinLength } from 'class-validator';
+import { ThrottlerGuard } from '@nestjs/throttler';
 
-import { AppService } from './app.service';
-
-// DTO for / (hello) endpoint. Example
-class HelloResponseDto {
-  @ApiProperty({ example: 'Hello World!' })
-  message!: string;
+class HealthIndicatorResponseDto {
+  @ApiProperty({ example: 'up' })
+  status: string;
 }
 
-// DTO for /echo endpoint. Example
-class EchoRequestDto {
-  @ApiProperty({ example: 'Inception' })
-  @IsString()
-  @MinLength(1)
-  title!: string;
-
-  @ApiProperty({ example: 2010, minimum: 1800, maximum: 2100 })
-  @IsInt()
-  @Min(1800)
-  @Max(2100)
-  year!: number;
+class HealthCheckResponseDto {
+  @ApiProperty({ type: HealthIndicatorResponseDto })
+  api: HealthIndicatorResponseDto;
 }
 
-// DTO for /echo response. Example
-class EchoResponseDto {
-  @ApiProperty({ example: 'Inception (2010)' })
-  summary!: string;
-}
-
-@UseGuards(ThrottlerGuard) // tighter for login // throttling only inside this controller
+@UseGuards(ThrottlerGuard)
 @ApiTags('App')
 @Controller()
 export class AppController {
-  constructor(
-    private readonly appService: AppService,
-    private readonly health: HealthCheckService,
-  ) {}
-
-  @Throttle({ default: { ttl: 60000, limit: 5 } })
-  @Get()
-  @ApiOkResponse({ type: HelloResponseDto })
-  getHello(): HelloResponseDto {
-    return { message: this.appService.getHello() };
-  }
+  constructor(private readonly health: HealthCheckService) {}
 
   @Get('health')
   @HealthCheck()
+  @ApiOperation({ summary: 'Health check' })
+  @ApiOkResponse({ type: HealthCheckResponseDto })
   healthcheck() {
     return this.health.check([async () => ({ api: { status: 'up' } })]);
-  }
-
-  @Post('echo')
-  @ApiBody({ type: EchoRequestDto })
-  @ApiOkResponse({ type: EchoResponseDto })
-  echo(@Body() dto: EchoRequestDto): EchoResponseDto {
-    return { summary: `${dto.title} (${dto.year})` };
   }
 }

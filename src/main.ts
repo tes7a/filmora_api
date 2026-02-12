@@ -1,9 +1,14 @@
-import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
+import {
+  BadRequestException,
+  ClassSerializerInterceptor,
+  ValidationPipe,
+} from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
-import { PinoLogger } from 'nestjs-pino';
+import { Logger, PinoLogger } from 'nestjs-pino';
 
 import { CoreConfig } from '@/shared';
 import { AllExceptionsFilter } from '@/utils';
@@ -13,50 +18,57 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
-  // Use nestjs-pino Logger (singleton, implements LoggerService)
+  app.useLogger(app.get(Logger));
+
   const pinoLogger = await app.resolve(PinoLogger);
   const coreConfig = app.get(CoreConfig);
 
-  // ValidationPipe globally
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
       transformOptions: { enableImplicitConversion: true },
+      stopAtFirstError: true,
+      exceptionFactory: (errors) => {
+        const errorsMessages = errors.flatMap((error) => {
+          const constraints = error.constraints ?? {};
+          return Object.values(constraints).map((message) => ({
+            message,
+            field: error.property,
+          }));
+        });
+        return new BadRequestException(errorsMessages);
+      },
     }),
   );
 
-  // ClassSerializerInterceptor globally
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
-  // Unified errors
   app.useGlobalFilters(new AllExceptionsFilter(pinoLogger));
 
-  // If you are behind a reverse proxy (nginx, render, fly, etc.)
-  // uncomment so req.ip and rate-limit work correctly
-  // app.set('trust proxy', 1);
-
-  // Security headers
   app.use(
     helmet({
-      // Swagger uses inline scripts/styles sometimes — if you enable Swagger later,
-      // you may need to tune CSP. For now we disable it to avoid dev pain.
       contentSecurityPolicy: false,
     }),
   );
 
-  // Gzip/br compression
   app.use(compression());
 
-  // Cookie parser for refresh tokens
   app.use(cookieParser());
 
-  // CORS (configure origins via env)
-  // Example: CORS_ORIGIN=http://localhost:3000,http://localhost:3001
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Filmora API')
+    .setDescription('Film catalog backend API')
+    .setVersion('1.0.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api/docs', app, document);
+
   const origins = coreConfig.corsOrigin
     ? coreConfig.corsOrigin.split(',').map((s) => s.trim())
-    : true; // dev: allow all
+    : true;
 
   app.enableCors({
     origin: origins,

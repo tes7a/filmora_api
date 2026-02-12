@@ -21,6 +21,8 @@ import {
   JwtAuthGuard,
   JwtStrategy,
   LocalAuthGuard,
+  LocalStrategy,
+  RolesGuard,
 } from './presentation';
 
 @Module({
@@ -41,7 +43,9 @@ import {
     // Guards & Strategies
     JwtAuthGuard,
     LocalAuthGuard,
+    RolesGuard,
     JwtStrategy,
+    LocalStrategy,
 
     // Infrastructure
     JwtTokenService,
@@ -59,6 +63,6 @@ import {
     EmailConfirmationService,
     UserRegistrationService,
   ],
-  exports: [JwtAuthGuard],
+  exports: [JwtAuthGuard, RolesGuard],
 })
 export class AuthModule {}
