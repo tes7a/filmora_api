@@ -1,4 +1,4 @@
-import type { user_status } from '@prisma/client';
+import type { code_role, user_status } from '@prisma/client';
 
 export interface AdminUserDto {
   id: string;
@@ -35,4 +35,14 @@ export interface PaginatedAdminUsersDto {
   total: number;
   page: number;
   limit: number;
+}
+
+export interface UpdateUserStatusParams {
+  userId: string;
+  status: user_status;
+}
+
+export interface AddUserRoleParams {
+  userId: string;
+  roleCode: code_role;
 }

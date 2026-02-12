@@ -9,4 +9,6 @@ export enum ROUTES {
 
   ADMIN = 'admin',
   ADMIN_USERS = 'users',
+  ADMIN_USER_STATUS = 'users/:userId/status',
+  ADMIN_USER_ROLE = 'users/:userId/roles',
 }
