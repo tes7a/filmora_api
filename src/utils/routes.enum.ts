@@ -13,6 +13,7 @@ export enum ROUTES {
   ADMIN_USER_ROLE = 'users/:userId/roles',
 
   FILMS = 'films',
+  FILM_REVIEWS = ':id/reviews',
   FILM_GET_MY_RATING = ':id/rating/me',
   FILM_UPDATE_RATING = ':id/rating',
 }
