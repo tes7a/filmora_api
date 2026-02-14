@@ -70,3 +70,15 @@ export class UpdateFilmRatingResponseDto {
   @ApiProperty({ example: 1024 })
   ratingsCount: number;
 }
+
+export class MyFilmRatingResponseDto {
+  @ApiProperty({ example: 'a6d4ec80-1298-4fd3-87df-1785f4311845' })
+  filmId: string;
+
+  @ApiProperty({
+    example: 8,
+    nullable: true,
+    description: 'Current user rating for this film or null if not rated yet',
+  })
+  userScore: number | null;
+}
