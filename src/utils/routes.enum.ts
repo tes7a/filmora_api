@@ -13,4 +13,5 @@ export enum ROUTES {
   ADMIN_USER_ROLE = 'users/:userId/roles',
 
   FILMS = 'films',
+  FILM_UPDATE_RATING = ':id/rating',
 }

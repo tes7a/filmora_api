@@ -1,22 +1,47 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Put,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiBody,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import type { Request } from 'express';
 
+import type { AuthenticatedUser } from '@/modules/auth/infrastructure';
+import { JwtAuthGuard } from '@/modules/auth/presentation';
 import { ROUTES } from '@/utils';
 
-import { GetFilmsService } from '../../application';
-import { PaginatedFilmsResponseDto } from '../dto';
+import { GetFilmsService, UpdateFilmRatingService } from '../../application';
+import {
+  PaginatedFilmsResponseDto,
+  UpdateFilmRatingDto,
+  UpdateFilmRatingResponseDto,
+} from '../dto';
 import { GetFilmsQueryDto } from '../dto/get-films.query';
 
 @Controller(ROUTES.FILMS)
 @ApiTags('Films')
 export class FilmsController {
-  constructor(private readonly getFilmsService: GetFilmsService) {}
+  constructor(
+    private readonly getFilmsService: GetFilmsService,
+    private readonly updateFilmRatingService: UpdateFilmRatingService,
+  ) {}
 
   @Get()
   @ApiOperation({
@@ -42,7 +67,8 @@ export class FilmsController {
     name: 'years',
     required: false,
     type: String,
-    description: 'Release years as CSV or repeated params. Example: years=1999,2003',
+    description:
+      'Release years as CSV or repeated params. Example: years=1999,2003',
     example: '1999,2003',
   })
   @ApiQuery({
@@ -80,6 +106,36 @@ export class FilmsController {
       sortOrder: query.sortOrder,
       page: query.page,
       limit: query.limit,
+    });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put(ROUTES.FILM_UPDATE_RATING)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Create or update current user rating for a film',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    format: 'uuid',
+    description: 'Film id',
+  })
+  @ApiBody({ type: UpdateFilmRatingDto })
+  @ApiOkResponse({ type: UpdateFilmRatingResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({ description: 'Film not found' })
+  async updateFilmRating(
+    @Req() req: Request,
+    @Param('id', new ParseUUIDPipe()) filmId: string,
+    @Body() body: UpdateFilmRatingDto,
+  ) {
+    const user = req.user as AuthenticatedUser;
+
+    return this.updateFilmRatingService.execute({
+      filmId,
+      userId: user.id,
+      score: body.score,
     });
   }
 }
