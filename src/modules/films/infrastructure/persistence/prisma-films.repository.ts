@@ -7,6 +7,8 @@ import type {
   FilmListItemDto,
   FilmRatingStatsDto,
   GetFilmsParams,
+  GetMyFilmRatingParams,
+  MyFilmRatingDto,
   UpdateFilmRatingParams,
 } from '../dto';
 import type { FilmsRepository } from './films.repository';
@@ -150,6 +152,36 @@ export class PrismaFilmsRepository implements FilmsRepository {
         ratingsCount,
       };
     });
+  }
+
+  async getMyFilmRating(
+    params: GetMyFilmRatingParams,
+  ): Promise<MyFilmRatingDto | null> {
+    const { filmId, userId } = params;
+
+    const film = await this.prisma.films.findUnique({
+      where: { id: filmId },
+      select: { id: true },
+    });
+
+    if (!film) {
+      return null;
+    }
+
+    const rating = await this.prisma.ratings.findUnique({
+      where: {
+        user_id_film_id: {
+          user_id: userId,
+          film_id: filmId,
+        },
+      },
+      select: { score: true },
+    });
+
+    return {
+      filmId,
+      userScore: rating?.score ?? null,
+    };
   }
 
   private toFilmListItem(

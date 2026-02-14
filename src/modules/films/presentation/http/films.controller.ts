@@ -27,8 +27,13 @@ import type { AuthenticatedUser } from '@/modules/auth/infrastructure';
 import { JwtAuthGuard } from '@/modules/auth/presentation';
 import { ROUTES } from '@/utils';
 
-import { GetFilmsService, UpdateFilmRatingService } from '../../application';
 import {
+  GetFilmsService,
+  GetMyFilmRatingService,
+  UpdateFilmRatingService,
+} from '../../application';
+import {
+  MyFilmRatingResponseDto,
   PaginatedFilmsResponseDto,
   UpdateFilmRatingDto,
   UpdateFilmRatingResponseDto,
@@ -40,6 +45,7 @@ import { GetFilmsQueryDto } from '../dto/get-films.query';
 export class FilmsController {
   constructor(
     private readonly getFilmsService: GetFilmsService,
+    private readonly getMyFilmRatingService: GetMyFilmRatingService,
     private readonly updateFilmRatingService: UpdateFilmRatingService,
   ) {}
 
@@ -136,6 +142,33 @@ export class FilmsController {
       filmId,
       userId: user.id,
       score: body.score,
+    });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(ROUTES.FILM_GET_MY_RATING)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get current user rating for a film',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    format: 'uuid',
+    description: 'Film id',
+  })
+  @ApiOkResponse({ type: MyFilmRatingResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({ description: 'Film not found' })
+  async getMyFilmRating(
+    @Req() req: Request,
+    @Param('id', new ParseUUIDPipe()) filmId: string,
+  ) {
+    const user = req.user as AuthenticatedUser;
+
+    return this.getMyFilmRatingService.execute({
+      filmId,
+      userId: user.id,
     });
   }
 }

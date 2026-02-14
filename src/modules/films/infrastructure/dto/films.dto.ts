@@ -47,3 +47,13 @@ export interface FilmRatingStatsDto {
   averageRating: number;
   ratingsCount: number;
 }
+
+export interface GetMyFilmRatingParams {
+  filmId: string;
+  userId: string;
+}
+
+export interface MyFilmRatingDto {
+  filmId: string;
+  userScore: number | null;
+}

@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
 
-import { GetFilmsService, UpdateFilmRatingService } from './application';
+import {
+  GetFilmsService,
+  GetMyFilmRatingService,
+  UpdateFilmRatingService,
+} from './application';
 import { FILMS_REPOSITORY, PrismaFilmsRepository } from './infrastructure';
 import { FilmsController } from './presentation';
 
@@ -8,6 +12,7 @@ import { FilmsController } from './presentation';
   controllers: [FilmsController],
   providers: [
     GetFilmsService,
+    GetMyFilmRatingService,
     UpdateFilmRatingService,
     {
       provide: FILMS_REPOSITORY,
