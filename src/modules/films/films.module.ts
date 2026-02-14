@@ -2,22 +2,34 @@ import { Module } from '@nestjs/common';
 
 import {
   CreateFilmReviewService,
+  CreateReviewCommentService,
+  DeleteCommentService,
   GetFilmReviewsService,
   GetFilmsService,
   GetMyFilmRatingService,
+  GetReviewCommentsService,
+  UpdateCommentService,
   UpdateFilmRatingService,
   UpdateReviewService,
 } from './application';
 import { FILMS_REPOSITORY, PrismaFilmsRepository } from './infrastructure';
-import { FilmsController } from './presentation';
+import {
+  CommentsController,
+  FilmsController,
+  ReviewsCommentsController,
+} from './presentation';
 
 @Module({
-  controllers: [FilmsController],
+  controllers: [FilmsController, ReviewsCommentsController, CommentsController],
   providers: [
+    CreateReviewCommentService,
+    DeleteCommentService,
     CreateFilmReviewService,
     GetFilmReviewsService,
     GetFilmsService,
     GetMyFilmRatingService,
+    GetReviewCommentsService,
+    UpdateCommentService,
     UpdateReviewService,
     UpdateFilmRatingService,
     {

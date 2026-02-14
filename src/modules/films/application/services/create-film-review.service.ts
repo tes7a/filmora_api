@@ -29,6 +29,12 @@ export class CreateFilmReviewService {
 
       return result;
     } catch (error) {
+      const prismaError = error as { code?: string } | undefined;
+
+      if (prismaError?.code === 'P2002') {
+        throw new ConflictException('User already has a review for this film');
+      }
+
       if (error instanceof Error && error.message === 'REVIEW_ALREADY_EXISTS') {
         throw new ConflictException('User already has a review for this film');
       }
