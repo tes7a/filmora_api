@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 
-import { GetFilmsService } from './application';
+import { GetFilmsService, UpdateFilmRatingService } from './application';
 import { FILMS_REPOSITORY, PrismaFilmsRepository } from './infrastructure';
 import { FilmsController } from './presentation';
 
@@ -8,6 +8,7 @@ import { FilmsController } from './presentation';
   controllers: [FilmsController],
   providers: [
     GetFilmsService,
+    UpdateFilmRatingService,
     {
       provide: FILMS_REPOSITORY,
       useClass: PrismaFilmsRepository,

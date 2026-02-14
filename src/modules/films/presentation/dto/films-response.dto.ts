@@ -56,3 +56,17 @@ export class PaginatedFilmsResponseDto {
   @ApiProperty({ example: 20 })
   limit: number;
 }
+
+export class UpdateFilmRatingResponseDto {
+  @ApiProperty({ example: 'a6d4ec80-1298-4fd3-87df-1785f4311845' })
+  filmId: string;
+
+  @ApiProperty({ example: 8 })
+  userScore: number;
+
+  @ApiProperty({ example: 8.5 })
+  averageRating: number;
+
+  @ApiProperty({ example: 1024 })
+  ratingsCount: number;
+}

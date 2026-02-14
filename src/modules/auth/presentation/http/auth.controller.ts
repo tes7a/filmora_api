@@ -25,7 +25,7 @@ import {
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 
-import { ROUTES } from '@/utils';
+import { ROLES, ROUTES } from '@/utils';
 
 import {
   AuthLocalService,
@@ -62,7 +62,9 @@ export class AuthController {
   @ApiOperation({ summary: 'Login' })
   @ApiBody({ type: LoginDto })
   @ApiOkResponse({ type: LoginResponseDto })
-  @ApiUnauthorizedResponse({ description: 'Invalid credentials or inactive account' })
+  @ApiUnauthorizedResponse({
+    description: 'Invalid credentials or inactive account',
+  })
   async login(
     @Res({ passthrough: true }) res: Response,
     @Ip() ip: string,
@@ -143,7 +145,7 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('user', 'moderator', 'admin')
+  @Roles(ROLES.ADMIN, ROLES.USER, ROLES.MODERATOR)
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   @Get(ROUTES.AUTH_ME)
   @ApiBearerAuth()

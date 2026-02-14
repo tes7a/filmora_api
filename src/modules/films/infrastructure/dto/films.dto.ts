@@ -34,3 +34,16 @@ export interface PaginatedFilmsDto {
   page: number;
   limit: number;
 }
+
+export interface UpdateFilmRatingParams {
+  filmId: string;
+  userId: string;
+  score: number;
+}
+
+export interface FilmRatingStatsDto {
+  filmId: string;
+  userScore: number;
+  averageRating: number;
+  ratingsCount: number;
+}

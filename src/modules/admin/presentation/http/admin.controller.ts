@@ -25,9 +25,13 @@ import type { Request } from 'express';
 
 import type { AuthenticatedUser } from '@/modules/auth/infrastructure';
 import { JwtAuthGuard, Roles, RolesGuard } from '@/modules/auth/presentation';
-import { ROUTES } from '@/utils';
+import { ROLES, ROUTES } from '@/utils';
 
-import { AddUserRoleService, GetUsersService, UpdateUserStatusService } from '../../application';
+import {
+  AddUserRoleService,
+  GetUsersService,
+  UpdateUserStatusService,
+} from '../../application';
 import { AddUserRoleDto } from '../dto/add-user-role.dto';
 import { GetUsersQueryDto } from '../dto/get-users.query';
 import { UpdateUserStatusDto } from '../dto/update-user-status.dto';
@@ -47,7 +51,7 @@ export class AdminController {
   ) {}
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('moderator', 'admin')
+  @Roles(ROLES.ADMIN, ROLES.MODERATOR)
   @Get(ROUTES.ADMIN_USERS)
   @ApiOperation({ summary: 'Get users (paginated)' })
   @ApiOkResponse({ type: PaginatedAdminUsersResponseDto })
@@ -66,7 +70,7 @@ export class AdminController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @Roles(ROLES.ADMIN)
   @Patch(ROUTES.ADMIN_USER_STATUS)
   @ApiOperation({ summary: 'Update user status' })
   @ApiParam({
@@ -76,7 +80,10 @@ export class AdminController {
     description: 'Target user id',
   })
   @ApiBody({ type: UpdateUserStatusDto })
-  @ApiOkResponse({ type: AdminUserResponseDto, description: 'Updated user data' })
+  @ApiOkResponse({
+    type: AdminUserResponseDto,
+    description: 'Updated user data',
+  })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({ description: 'Insufficient role' })
   @ApiNotFoundResponse({ description: 'User not found' })
@@ -91,7 +98,7 @@ export class AdminController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @Roles(ROLES.ADMIN)
   @Patch(ROUTES.ADMIN_USER_ROLE)
   @ApiOperation({ summary: 'Add role to user' })
   @ApiParam({
@@ -101,7 +108,10 @@ export class AdminController {
     description: 'Target user id',
   })
   @ApiBody({ type: AddUserRoleDto })
-  @ApiOkResponse({ type: AdminUserResponseDto, description: 'Updated user data' })
+  @ApiOkResponse({
+    type: AdminUserResponseDto,
+    description: 'Updated user data',
+  })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({ description: 'Insufficient role' })
   @ApiNotFoundResponse({ description: 'User or role not found' })

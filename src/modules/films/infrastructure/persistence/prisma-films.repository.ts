@@ -1,9 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { film_status,Prisma } from '@prisma/client';
+import { film_status, Prisma } from '@prisma/client';
 
 import { PrismaService } from '@/shared';
 
-import type { FilmListItemDto, GetFilmsParams } from '../dto';
+import type {
+  FilmListItemDto,
+  FilmRatingStatsDto,
+  GetFilmsParams,
+  UpdateFilmRatingParams,
+} from '../dto';
 import type { FilmsRepository } from './films.repository';
 
 @Injectable()
@@ -85,6 +90,66 @@ export class PrismaFilmsRepository implements FilmsRepository {
       page,
       limit,
     };
+  }
+
+  async updateFilmRating(
+    params: UpdateFilmRatingParams,
+  ): Promise<FilmRatingStatsDto | null> {
+    const { filmId, userId, score } = params;
+
+    return this.prisma.$transaction(async (tx) => {
+      const film = await tx.films.findUnique({
+        where: { id: filmId },
+        select: { id: true },
+      });
+
+      if (!film) {
+        return null;
+      }
+
+      await tx.ratings.upsert({
+        where: {
+          user_id_film_id: {
+            user_id: userId,
+            film_id: filmId,
+          },
+        },
+        create: {
+          user_id: userId,
+          film_id: filmId,
+          score,
+        },
+        update: {
+          score,
+          updated_at: new Date(),
+        },
+      });
+
+      const aggregate = await tx.ratings.aggregate({
+        where: { film_id: filmId },
+        _avg: { score: true },
+        _count: { _all: true },
+      });
+
+      const averageRating = Number((aggregate._avg.score ?? 0).toFixed(1));
+      const ratingsCount = aggregate._count._all;
+
+      await tx.films.update({
+        where: { id: filmId },
+        data: {
+          average_rating: new Prisma.Decimal(averageRating),
+          ratings_count: ratingsCount,
+          updated_at: new Date(),
+        },
+      });
+
+      return {
+        filmId,
+        userScore: score,
+        averageRating,
+        ratingsCount,
+      };
+    });
   }
 
   private toFilmListItem(
