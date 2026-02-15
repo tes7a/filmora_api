@@ -18,41 +18,101 @@ export class PrismaFilmsRepository implements FilmsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async getFilms(params: GetFilmsParams) {
-    const { search, genres, years, sortBy, sortOrder, page, limit } = params;
-    const skip = (page - 1) * limit;
+    const {
+      q,
+      genreIds,
+      tagIds,
+      countryIds,
+      yearFrom,
+      yearTo,
+      ratingFrom,
+      ratingTo,
+      sortBy,
+      sortOrder,
+      page,
+      pageSize,
+    } = params;
+    const skip = (page - 1) * pageSize;
+
+    const releaseYearFilter: Prisma.IntFilter = {};
+    const averageRatingFilter: Prisma.DecimalFilter = {};
+
+    if (yearFrom !== undefined) {
+      releaseYearFilter.gte = yearFrom;
+    }
+
+    if (yearTo !== undefined) {
+      releaseYearFilter.lte = yearTo;
+    }
+
+    if (ratingFrom !== undefined) {
+      averageRatingFilter.gte = new Prisma.Decimal(ratingFrom);
+    }
+
+    if (ratingTo !== undefined) {
+      averageRatingFilter.lte = new Prisma.Decimal(ratingTo);
+    }
 
     const where: Prisma.filmsWhereInput = {
       status: film_status.visible,
-      ...(search
+      ...(q
         ? {
             title: {
-              contains: search,
+              contains: q,
               mode: Prisma.QueryMode.insensitive,
             },
           }
         : {}),
-      ...(genres?.length
+      ...(genreIds?.length
         ? {
             film_genres: {
               some: {
-                genres: {
-                  slug: { in: genres },
-                },
+                genre_id: { in: genreIds },
               },
             },
           }
         : {}),
-      ...(years?.length
+      ...(tagIds?.length
         ? {
-            release_year: { in: years },
+            film_tags: {
+              some: {
+                tag_id: { in: tagIds },
+              },
+            },
+          }
+        : {}),
+      ...(countryIds?.length
+        ? {
+            film_countries: {
+              some: {
+                country_id: { in: countryIds },
+              },
+            },
+          }
+        : {}),
+      ...(Object.keys(releaseYearFilter).length
+        ? {
+            release_year: releaseYearFilter,
+          }
+        : {}),
+      ...(Object.keys(averageRatingFilter).length
+        ? {
+            average_rating: averageRatingFilter,
           }
         : {}),
     };
 
-    const orderBy: Prisma.filmsOrderByWithRelationInput[] =
-      sortBy === 'rating'
-        ? [{ average_rating: sortOrder }, { created_at: 'desc' }]
-        : [{ release_year: sortOrder }, { created_at: 'desc' }];
+    const orderBy: Prisma.filmsOrderByWithRelationInput[] = [];
+
+    if (sortBy === 'rating') {
+      orderBy.push({ average_rating: sortOrder });
+    } else if (sortBy === 'popularity') {
+      orderBy.push({ popularity_score: sortOrder });
+    } else {
+      orderBy.push({ release_year: sortOrder });
+    }
+
+    orderBy.push({ created_at: 'desc' });
 
     const [films, total] = await this.prisma.$transaction([
       this.prisma.films.findMany({
@@ -81,7 +141,7 @@ export class PrismaFilmsRepository implements FilmsRepository {
         },
         orderBy,
         skip,
-        take: limit,
+        take: pageSize,
       }),
       this.prisma.films.count({ where }),
     ]);
@@ -90,7 +150,7 @@ export class PrismaFilmsRepository implements FilmsRepository {
       items: films.map((film) => this.toFilmListItem(film)),
       total,
       page,
-      limit,
+      pageSize,
     };
   }
 

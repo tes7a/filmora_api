@@ -54,7 +54,7 @@ export class PaginatedFilmsResponseDto {
   page: number;
 
   @ApiProperty({ example: 20 })
-  limit: number;
+  pageSize: number;
 }
 
 export class UpdateFilmRatingResponseDto {

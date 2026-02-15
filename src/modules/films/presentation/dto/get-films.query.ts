@@ -4,14 +4,16 @@ import {
   ArrayUnique,
   IsIn,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   Max,
   Min,
   MinLength,
 } from 'class-validator';
 
-const FILMS_SORT_BY = ['rating', 'newest'] as const;
+const FILMS_SORT_BY = ['rating', 'date', 'popularity'] as const;
 const SORT_ORDER = ['asc', 'desc'] as const;
 
 export type FilmsSortBy = (typeof FILMS_SORT_BY)[number];
@@ -35,16 +37,14 @@ function toStringArray(value: unknown): string[] | undefined {
   return undefined;
 }
 
-function toNumberArray(value: unknown): number[] | undefined {
-  const values = toStringArray(value);
-
-  if (!values?.length) {
+function toNumber(value: unknown): number | undefined {
+  if (value === null || value === undefined || value === '') {
     return undefined;
   }
 
-  return values
-    .map((item) => Number(item))
-    .filter((item) => Number.isInteger(item));
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed) ? parsed : undefined;
 }
 
 export class GetFilmsQueryDto {
@@ -56,39 +56,109 @@ export class GetFilmsQueryDto {
   @IsOptional()
   @IsString()
   @MinLength(1)
-  search?: string;
+  q?: string;
 
   @ApiPropertyOptional({
-    description: 'Genre slugs. CSV or repeated query params are supported',
+    description: 'Genre ids. CSV or repeated query params are supported',
     type: [String],
-    example: ['sci-fi', 'drama'],
+    example: [
+      '0d1f4667-e9c8-4ac6-9d11-682de1f06b52',
+      '9ba189b7-a337-4edf-aa1f-70e41c003337',
+    ],
   })
   @Transform(({ value }) => toStringArray(value))
   @IsOptional()
   @ArrayUnique()
-  @IsString({ each: true })
-  genres?: string[];
+  @IsUUID('4', { each: true })
+  genreIds?: string[];
 
   @ApiPropertyOptional({
-    description: 'Release years. CSV or repeated query params are supported',
-    type: [Number],
-    example: [1999, 2003],
+    description: 'Tag ids. CSV or repeated query params are supported',
+    type: [String],
+    example: [
+      '12474e2e-2936-4a1d-a885-5fe1a74f4529',
+      '25664376-3e6c-40f7-bfb7-af10bacd1a2d',
+    ],
   })
-  @Transform(({ value }) => toNumberArray(value))
+  @Transform(({ value }) => toStringArray(value))
   @IsOptional()
   @ArrayUnique()
-  @IsInt({ each: true })
-  @Min(1888, { each: true })
-  @Max(3000, { each: true })
-  years?: number[];
+  @IsUUID('4', { each: true })
+  tagIds?: string[];
 
   @ApiPropertyOptional({
-    description: 'Sort mode: by rating or by novelty (release year)',
+    description: 'Country ids. CSV or repeated query params are supported',
+    type: [String],
+    example: [
+      'bfb6fd98-bf97-4996-b8e5-e08ce59477cf',
+      'f272ea98-4b54-4f6a-b752-b97456943f43',
+    ],
+  })
+  @Transform(({ value }) => toStringArray(value))
+  @IsOptional()
+  @ArrayUnique()
+  @IsUUID('4', { each: true })
+  countryIds?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Release year lower bound',
+    minimum: 1888,
+    maximum: 3000,
+    example: 1990,
+  })
+  @Transform(({ value }) => toNumber(value))
+  @IsOptional()
+  @IsInt()
+  @Min(1888)
+  @Max(3000)
+  yearFrom?: number;
+
+  @ApiPropertyOptional({
+    description: 'Release year upper bound',
+    minimum: 1888,
+    maximum: 3000,
+    example: 2025,
+  })
+  @Transform(({ value }) => toNumber(value))
+  @IsOptional()
+  @IsInt()
+  @Min(1888)
+  @Max(3000)
+  yearTo?: number;
+
+  @ApiPropertyOptional({
+    description: 'Average rating lower bound',
+    minimum: 0,
+    maximum: 10,
+    example: 7.5,
+  })
+  @Transform(({ value }) => toNumber(value))
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(10)
+  ratingFrom?: number;
+
+  @ApiPropertyOptional({
+    description: 'Average rating upper bound',
+    minimum: 0,
+    maximum: 10,
+    example: 9.8,
+  })
+  @Transform(({ value }) => toNumber(value))
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(10)
+  ratingTo?: number;
+
+  @ApiPropertyOptional({
+    description: 'Sort mode',
     enum: FILMS_SORT_BY,
-    default: 'newest',
+    default: 'date',
   })
   @IsIn(FILMS_SORT_BY)
-  sortBy: FilmsSortBy = 'newest';
+  sortBy: FilmsSortBy = 'date';
 
   @ApiPropertyOptional({
     description: 'Sort direction',
@@ -118,5 +188,5 @@ export class GetFilmsQueryDto {
   @IsInt()
   @Min(1)
   @Max(100)
-  limit: number = 20;
+  pageSize: number = 20;
 }
