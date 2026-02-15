@@ -52,35 +52,67 @@ export class FilmsController {
   @Get()
   @ApiOperation({
     summary:
-      'Get films with search, filtering by genres/years, sorting, and pagination',
+      'Get films with filtering, sorting, and pagination',
   })
   @ApiQuery({
-    name: 'search',
+    name: 'q',
     required: false,
     type: String,
     description: 'Search by title (contains, case-insensitive)',
     example: 'matrix',
   })
   @ApiQuery({
-    name: 'genres',
+    name: 'genreIds',
     required: false,
     type: String,
-    description:
-      'Genre slugs as CSV or repeated params. Example: genres=sci-fi,action',
-    example: 'sci-fi,drama',
+    description: 'Genre ids as CSV or repeated params',
+    example:
+      '0d1f4667-e9c8-4ac6-9d11-682de1f06b52,9ba189b7-a337-4edf-aa1f-70e41c003337',
   })
   @ApiQuery({
-    name: 'years',
+    name: 'tagIds',
     required: false,
     type: String,
-    description:
-      'Release years as CSV or repeated params. Example: years=1999,2003',
-    example: '1999,2003',
+    description: 'Tag ids as CSV or repeated params',
+    example:
+      '12474e2e-2936-4a1d-a885-5fe1a74f4529,25664376-3e6c-40f7-bfb7-af10bacd1a2d',
+  })
+  @ApiQuery({
+    name: 'countryIds',
+    required: false,
+    type: String,
+    description: 'Country ids as CSV or repeated params',
+    example:
+      'bfb6fd98-bf97-4996-b8e5-e08ce59477cf,f272ea98-4b54-4f6a-b752-b97456943f43',
+  })
+  @ApiQuery({
+    name: 'yearFrom',
+    required: false,
+    type: Number,
+    example: 1990,
+  })
+  @ApiQuery({
+    name: 'yearTo',
+    required: false,
+    type: Number,
+    example: 2025,
+  })
+  @ApiQuery({
+    name: 'ratingFrom',
+    required: false,
+    type: Number,
+    example: 7.5,
+  })
+  @ApiQuery({
+    name: 'ratingTo',
+    required: false,
+    type: Number,
+    example: 9.5,
   })
   @ApiQuery({
     name: 'sortBy',
     required: false,
-    enum: ['rating', 'newest'],
+    enum: ['rating', 'date', 'popularity'],
     description: 'Sort mode',
   })
   @ApiQuery({
@@ -96,7 +128,7 @@ export class FilmsController {
     example: 1,
   })
   @ApiQuery({
-    name: 'limit',
+    name: 'pageSize',
     required: false,
     type: Number,
     example: 20,
@@ -105,13 +137,18 @@ export class FilmsController {
   @ApiBadRequestResponse({ description: 'Validation error for query params' })
   async getFilms(@Query() query: GetFilmsQueryDto) {
     return this.getFilmsService.execute({
-      search: query.search,
-      genres: query.genres,
-      years: query.years,
+      q: query.q,
+      genreIds: query.genreIds,
+      tagIds: query.tagIds,
+      countryIds: query.countryIds,
+      yearFrom: query.yearFrom,
+      yearTo: query.yearTo,
+      ratingFrom: query.ratingFrom,
+      ratingTo: query.ratingTo,
       sortBy: query.sortBy,
       sortOrder: query.sortOrder,
       page: query.page,
-      limit: query.limit,
+      pageSize: query.pageSize,
     });
   }
 

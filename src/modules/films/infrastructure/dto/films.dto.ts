@@ -1,14 +1,19 @@
-export type FilmsSortBy = 'rating' | 'newest';
+export type FilmsSortBy = 'rating' | 'date' | 'popularity';
 export type SortOrder = 'asc' | 'desc';
 
 export interface GetFilmsParams {
-  search?: string;
-  genres?: string[];
-  years?: number[];
+  q?: string;
+  genreIds?: string[];
+  tagIds?: string[];
+  countryIds?: string[];
+  yearFrom?: number;
+  yearTo?: number;
+  ratingFrom?: number;
+  ratingTo?: number;
   sortBy: FilmsSortBy;
   sortOrder: SortOrder;
   page: number;
-  limit: number;
+  pageSize: number;
 }
 
 export interface FilmListItemDto {
@@ -32,7 +37,7 @@ export interface PaginatedFilmsDto {
   items: FilmListItemDto[];
   total: number;
   page: number;
-  limit: number;
+  pageSize: number;
 }
 
 export interface UpdateFilmRatingParams {
