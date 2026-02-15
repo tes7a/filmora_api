@@ -28,17 +28,12 @@ import { ROUTES } from '@/utils';
 
 import {
   CreateFilmReviewService,
-  CreateReviewCommentService,
   GetFilmReviewsService,
-  GetReviewCommentsService,
   UpdateReviewService,
 } from '../../application';
 import {
-  CommentResponseDto,
-  CommentTreeResponseDto,
   CreatedFilmReviewResponseDto,
   CreateFilmReviewDto,
-  CreateReviewCommentDto,
   FilmReviewResponseDto,
   UpdatedReviewResponseDto,
   UpdateReviewDto,
@@ -46,12 +41,10 @@ import {
 
 @Controller(ROUTES.REVIEWS)
 @ApiTags('Reviews')
-export class ReviewsCommentsController {
+export class ReviewsController {
   constructor(
     private readonly createFilmReviewService: CreateFilmReviewService,
-    private readonly createReviewCommentService: CreateReviewCommentService,
     private readonly getFilmReviewsService: GetFilmReviewsService,
-    private readonly getReviewCommentsService: GetReviewCommentsService,
     private readonly updateReviewService: UpdateReviewService,
   ) {}
 
@@ -135,53 +128,6 @@ export class ReviewsCommentsController {
       userId: user.id,
       title: body.title,
       body: body.body,
-    });
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Post(ROUTES.REVIEW_COMMENTS)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create comment for review' })
-  @ApiParam({
-    name: 'id',
-    type: String,
-    format: 'uuid',
-    description: 'Review id',
-  })
-  @ApiBody({ type: CreateReviewCommentDto })
-  @ApiOkResponse({ type: CommentResponseDto })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiNotFoundResponse({ description: 'Review or parent comment not found' })
-  async createReviewComment(
-    @Req() req: Request,
-    @Param('id', new ParseUUIDPipe()) reviewId: string,
-    @Body() body: CreateReviewCommentDto,
-  ) {
-    const user = req.user as AuthenticatedUser;
-
-    return this.createReviewCommentService.execute({
-      reviewId,
-      userId: user.id,
-      body: body.body,
-      parentId: body.parentId ?? null,
-    });
-  }
-
-  @Get(ROUTES.REVIEW_COMMENTS)
-  @ApiOperation({
-    summary: 'Get visible comments tree for review ordered by created_at',
-  })
-  @ApiParam({
-    name: 'id',
-    type: String,
-    format: 'uuid',
-    description: 'Review id',
-  })
-  @ApiOkResponse({ type: CommentTreeResponseDto, isArray: true })
-  @ApiNotFoundResponse({ description: 'Review not found' })
-  async getReviewComments(@Param('id', new ParseUUIDPipe()) reviewId: string) {
-    return this.getReviewCommentsService.execute({
-      reviewId,
     });
   }
 }

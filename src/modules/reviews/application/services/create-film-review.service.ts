@@ -8,20 +8,20 @@ import {
 import {
   type CreatedFilmReviewDto,
   type CreateFilmReviewParams,
-  FILMS_REPOSITORY,
-  type FilmsRepository,
+  REVIEWS_REPOSITORY,
+  type ReviewsRepository,
 } from '../../infrastructure';
 
 @Injectable()
 export class CreateFilmReviewService {
   constructor(
-    @Inject(FILMS_REPOSITORY)
-    private readonly filmsRepository: FilmsRepository,
+    @Inject(REVIEWS_REPOSITORY)
+    private readonly reviewsRepository: ReviewsRepository,
   ) {}
 
   async execute(params: CreateFilmReviewParams): Promise<CreatedFilmReviewDto> {
     try {
-      const result = await this.filmsRepository.createFilmReview(params);
+      const result = await this.reviewsRepository.createFilmReview(params);
 
       if (!result) {
         throw new NotFoundException('Film not found');
