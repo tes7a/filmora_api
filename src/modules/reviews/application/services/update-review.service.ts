@@ -1,8 +1,8 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import {
-  FILMS_REPOSITORY,
-  type FilmsRepository,
+  REVIEWS_REPOSITORY,
+  type ReviewsRepository,
   type UpdatedReviewDto,
   type UpdateReviewParams,
 } from '../../infrastructure';
@@ -10,12 +10,12 @@ import {
 @Injectable()
 export class UpdateReviewService {
   constructor(
-    @Inject(FILMS_REPOSITORY)
-    private readonly filmsRepository: FilmsRepository,
+    @Inject(REVIEWS_REPOSITORY)
+    private readonly reviewsRepository: ReviewsRepository,
   ) {}
 
   async execute(params: UpdateReviewParams): Promise<UpdatedReviewDto> {
-    const review = await this.filmsRepository.updateReview(params);
+    const review = await this.reviewsRepository.updateReview(params);
 
     if (!review) {
       throw new NotFoundException('Review not found');

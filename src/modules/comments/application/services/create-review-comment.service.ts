@@ -7,21 +7,21 @@ import {
 
 import {
   type CommentDto,
+  COMMENTS_REPOSITORY,
+  type CommentsRepository,
   type CreateReviewCommentParams,
-  FILMS_REPOSITORY,
-  type FilmsRepository,
 } from '../../infrastructure';
 
 @Injectable()
 export class CreateReviewCommentService {
   constructor(
-    @Inject(FILMS_REPOSITORY)
-    private readonly filmsRepository: FilmsRepository,
+    @Inject(COMMENTS_REPOSITORY)
+    private readonly commentsRepository: CommentsRepository,
   ) {}
 
   async execute(params: CreateReviewCommentParams): Promise<CommentDto> {
     try {
-      const comment = await this.filmsRepository.createReviewComment(params);
+      const comment = await this.commentsRepository.createReviewComment(params);
 
       if (!comment) {
         throw new NotFoundException('Review not found');
