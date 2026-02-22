@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { review_status } from '@prisma/client';
 
 import { PrismaService } from '@/shared';
 
@@ -17,7 +18,7 @@ export class PrismaReviewsRepository implements ReviewsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async getFilmReviews(params: GetFilmReviewsParams): Promise<FilmReviewDto[] | null> {
-    const { filmId } = params;
+    const { filmId, requesterUserId } = params;
 
     const film = await this.prisma.films.findUnique({
       where: { id: filmId },
@@ -28,10 +29,25 @@ export class PrismaReviewsRepository implements ReviewsRepository {
       return null;
     }
 
+    const reviewsWhere = {
+      film_id: filmId,
+      ...(requesterUserId
+        ? {
+            OR: [
+              { status: review_status.visible },
+              {
+                status: review_status.hidden,
+                user_id: requesterUserId,
+              },
+            ],
+          }
+        : {
+            status: review_status.visible,
+          }),
+    };
+
     const reviews = await this.prisma.reviews.findMany({
-      where: {
-        film_id: filmId,
-      },
+      where: reviewsWhere,
       select: {
         id: true,
         status: true,

@@ -8,6 +8,7 @@ import {
   AdminModule,
   AuthModule,
   CommentsModule,
+  ComplaintsModule,
   FilmsModule,
   ReviewsModule,
 } from '@/modules';
@@ -87,6 +88,7 @@ import { AppController } from './app.controller';
     FilmsModule,
     ReviewsModule,
     CommentsModule,
+    ComplaintsModule,
   ],
   controllers: [AppController],
   providers: [],

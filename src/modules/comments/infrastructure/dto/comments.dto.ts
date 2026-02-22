@@ -26,6 +26,7 @@ export interface CreateReviewCommentParams {
 
 export interface GetReviewCommentsParams {
   reviewId: string;
+  requesterUserId?: string;
 }
 
 export interface UpdateCommentParams {
