@@ -23,7 +23,7 @@ import {
 import type { Request } from 'express';
 
 import type { AuthenticatedUser } from '@/modules/auth/infrastructure';
-import { JwtAuthGuard } from '@/modules/auth/presentation';
+import { JwtAuthGuard, OptionalJwtAuthGuard } from '@/modules/auth/presentation';
 import { ROUTES } from '@/utils';
 
 import {
@@ -48,6 +48,7 @@ export class ReviewsController {
     private readonly updateReviewService: UpdateReviewService,
   ) {}
 
+  @UseGuards(OptionalJwtAuthGuard)
   @Get(':id')
   @ApiOperation({
     summary: 'Get film reviews with current version and user',
@@ -60,9 +61,15 @@ export class ReviewsController {
   })
   @ApiOkResponse({ type: FilmReviewResponseDto, isArray: true })
   @ApiNotFoundResponse({ description: 'Film not found' })
-  async getFilmReviews(@Param('id', new ParseUUIDPipe()) filmId: string) {
+  async getFilmReviews(
+    @Req() req: Request,
+    @Param('id', new ParseUUIDPipe()) filmId: string,
+  ) {
+    const user = req.user as AuthenticatedUser | undefined;
+
     return this.getFilmReviewsService.execute({
       filmId,
+      requesterUserId: user?.id,
     });
   }
 

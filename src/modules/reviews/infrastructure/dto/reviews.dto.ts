@@ -36,6 +36,7 @@ export interface FilmReviewDto {
 
 export interface GetFilmReviewsParams {
   filmId: string;
+  requesterUserId?: string;
 }
 
 export interface UpdateReviewParams {

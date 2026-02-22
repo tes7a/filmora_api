@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { comment_status } from '@prisma/client';
+import { comment_status, review_status } from '@prisma/client';
 
 import { PrismaService } from '@/shared';
 
@@ -25,10 +25,14 @@ export class PrismaCommentsRepository implements CommentsRepository {
     return this.prisma.$transaction(async (tx) => {
       const review = await tx.reviews.findFirst({
         where: { id: reviewId },
-        select: { id: true },
+        select: { id: true, user_id: true, status: true },
       });
 
       if (!review) {
+        return null;
+      }
+
+      if (review.status === review_status.hidden && review.user_id !== userId) {
         return null;
       }
 
@@ -96,14 +100,21 @@ export class PrismaCommentsRepository implements CommentsRepository {
   async getReviewComments(
     params: GetReviewCommentsParams,
   ): Promise<CommentTreeDto[] | null> {
-    const { reviewId } = params;
+    const { reviewId, requesterUserId } = params;
 
     const review = await this.prisma.reviews.findFirst({
       where: { id: reviewId },
-      select: { id: true },
+      select: { id: true, user_id: true, status: true },
     });
 
     if (!review) {
+      return null;
+    }
+
+    if (
+      review.status === review_status.hidden &&
+      review.user_id !== requesterUserId
+    ) {
       return null;
     }
 

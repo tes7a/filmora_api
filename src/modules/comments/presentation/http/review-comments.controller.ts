@@ -21,7 +21,7 @@ import {
 import type { Request } from 'express';
 
 import type { AuthenticatedUser } from '@/modules/auth/infrastructure';
-import { JwtAuthGuard } from '@/modules/auth/presentation';
+import { JwtAuthGuard, OptionalJwtAuthGuard } from '@/modules/auth/presentation';
 import { ROUTES } from '@/utils';
 
 import {
@@ -71,6 +71,7 @@ export class ReviewCommentsController {
     });
   }
 
+  @UseGuards(OptionalJwtAuthGuard)
   @Get(ROUTES.REVIEW_COMMENTS)
   @ApiOperation({
     summary: 'Get visible comments tree for review ordered by created_at',
@@ -83,9 +84,15 @@ export class ReviewCommentsController {
   })
   @ApiOkResponse({ type: CommentTreeResponseDto, isArray: true })
   @ApiNotFoundResponse({ description: 'Review not found' })
-  async getReviewComments(@Param('id', new ParseUUIDPipe()) reviewId: string) {
+  async getReviewComments(
+    @Req() req: Request,
+    @Param('id', new ParseUUIDPipe()) reviewId: string,
+  ) {
+    const user = req.user as AuthenticatedUser | undefined;
+
     return this.getReviewCommentsService.execute({
       reviewId,
+      requesterUserId: user?.id,
     });
   }
 }
