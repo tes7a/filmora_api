@@ -4,7 +4,14 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { randomUUID } from 'crypto';
 import { LoggerModule } from 'nestjs-pino';
 
-import { AdminModule, AuthModule } from '@/modules';
+import {
+  AdminModule,
+  AuthModule,
+  CommentsModule,
+  ComplaintsModule,
+  FilmsModule,
+  ReviewsModule,
+} from '@/modules';
 import { CoreModule, EmailModule, PrismaModule } from '@/shared';
 
 import { AppController } from './app.controller';
@@ -78,6 +85,10 @@ import { AppController } from './app.controller';
     PrismaModule,
     AuthModule,
     AdminModule,
+    FilmsModule,
+    ReviewsModule,
+    CommentsModule,
+    ComplaintsModule,
   ],
   controllers: [AppController],
   providers: [],

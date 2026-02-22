@@ -75,6 +75,7 @@ model film_countries {
   films      films     @relation(fields: [film_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "film_countries_film_fk")
 
   @@id([film_id, country_id], map: "film_countries_pk")
+  @@index([country_id], map: "idx_film_countries_country_id")
 }
 
 model film_genres {
@@ -85,6 +86,7 @@ model film_genres {
   genres     genres   @relation(fields: [genre_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "film_genres_genre_fk")
 
   @@id([film_id, genre_id], map: "film_genres_pk")
+  @@index([genre_id], map: "idx_film_genres_genre_id")
 }
 
 model film_person_roles {
@@ -108,6 +110,7 @@ model film_tags {
   tags       tags     @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "film_tags_tag_fk")
 
   @@id([film_id, tag_id], map: "film_tags_pk")
+  @@index([tag_id], map: "idx_film_tags_tag_id")
 }
 
 model films {
@@ -131,6 +134,10 @@ model films {
   ratings           ratings[]
   reviews           reviews[]
   user_list_items   user_list_items[]
+
+  @@index([status, release_year], map: "idx_films_status_release_year")
+  @@index([status, average_rating], map: "idx_films_status_average_rating")
+  @@index([status, popularity_score], map: "idx_films_status_popularity")
 }
 
 model genres {
@@ -224,6 +231,8 @@ model reviews {
   review_versions_reviews_current_version_idToreview_versions review_versions?  @relation("reviews_current_version_idToreview_versions", fields: [current_version_id], references: [id], onUpdate: NoAction, map: "reviews_current_version_fk")
   films                                                       films             @relation(fields: [film_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "reviews_film_fk")
   users                                                       users             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "reviews_user_fk")
+
+  @@unique([user_id, film_id], map: "reviews_user_film_unique")
 }
 
 model roles {

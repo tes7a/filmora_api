@@ -1,0 +1,343 @@
+////////////////////////////////////////////////////
+// ================= ENUM TYPES ==================
+////////////////////////////////////////////////////
+
+Enum action_type {
+  hide_review
+  unhide_review
+  hide_comment
+  unhide_comment
+  block_user
+  unblock_user
+  hide_film
+  unhide_film
+}
+
+Enum code_role {
+  user
+  moderator
+  admin
+}
+
+Enum comment_status {
+  visible
+  hidden
+  deleted
+}
+
+Enum complaint_status {
+  pending
+  in_review
+  resolved
+  rejected
+}
+
+Enum film_status {
+  visible
+  hidden
+  deleted
+}
+
+Enum genre_status {
+  active
+  hidden
+  deleted
+}
+
+Enum list_type {
+  watchlist
+  watched
+  custom
+}
+
+Enum person_status {
+  visible
+  hidden
+  merged
+  deleted
+}
+
+Enum review_status {
+  visible
+  hidden
+  deleted
+}
+
+Enum role_type {
+  actor
+  director
+  writer
+  producer
+  other
+}
+
+Enum tag_status {
+  active
+  hidden
+  deleted
+}
+
+Enum target_type {
+  review
+  comment
+}
+
+Enum target_type_ext {
+  review
+  comment
+  user
+  film
+}
+
+Enum user_status {
+  active
+  blocked
+  deleted
+  pending
+}
+
+////////////////////////////////////////////////////
+// ================= TABLES ==================
+////////////////////////////////////////////////////
+
+Table users {
+  id uuid [pk]
+  email varchar(255) [unique, not null]
+  password_hash varchar(255) [not null]
+  display_name varchar(255) [not null]
+  status user_status [not null]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  last_login_at timestamp
+}
+
+Table roles {
+  id uuid [pk]
+  code code_role [not null]
+  name varchar(100) [not null]
+  description text [not null]
+}
+
+Table user_roles {
+  user_id uuid [pk, ref: > users.id]
+  role_id uuid [pk, ref: > roles.id]
+  assigned_at timestamp [not null]
+}
+
+Table auth_sessions {
+  id uuid [pk]
+  user_id uuid [not null, ref: > users.id]
+  refresh_token varchar(255) [unique, not null]
+  expires_at timestamp [not null]
+  created_at timestamp [not null]
+  revoked_at timestamp
+  ip varchar(64)
+  user_agent varchar(255)
+}
+
+////////////////////////////////////////////////////
+// ================= FILM DOMAIN ==================
+////////////////////////////////////////////////////
+
+Table films {
+  id uuid [pk]
+  title varchar(255) [not null]
+  original_title varchar(255) [unique, not null]
+  description text
+  release_year int [not null]
+  duration_min int [not null]
+  age_rating varchar(16)
+  status film_status [not null]
+  average_rating numeric(3,1) [not null, default: 0.0]
+  ratings_count int [not null, default: 0]
+  popularity_score numeric(10,2) [not null, default: 0]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+}
+
+Table persons {
+  id uuid [pk]
+  full_name varchar(255) [not null]
+  slug varchar(255) [unique, not null]
+  birth_date date
+  death_date date
+  bio text
+  status person_status [not null]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+}
+
+Table genres {
+  id uuid [pk]
+  name varchar(100) [unique, not null]
+  slug varchar(100) [unique, not null]
+  description text
+  status genre_status [not null]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+}
+
+Table tags {
+  id uuid [pk]
+  name varchar(100) [unique, not null]
+  slug varchar(100) [unique, not null]
+  description text
+  status tag_status [not null]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+}
+
+Table countries {
+  id uuid [pk]
+  code char(2) [unique, not null]
+  name varchar(100) [unique, not null]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+}
+
+Table film_genres {
+  film_id uuid [pk, ref: > films.id]
+  genre_id uuid [pk, ref: > genres.id]
+  created_at timestamp [not null]
+}
+
+Table film_tags {
+  film_id uuid [pk, ref: > films.id]
+  tag_id uuid [pk, ref: > tags.id]
+  created_at timestamp [not null]
+}
+
+Table film_countries {
+  film_id uuid [pk, ref: > films.id]
+  country_id uuid [pk, ref: > countries.id]
+  created_at timestamp [not null]
+}
+
+Table film_person_roles {
+  id uuid [pk]
+  film_id uuid [not null, ref: > films.id]
+  person_id uuid [not null, ref: > persons.id]
+  role_type role_type [not null]
+  character_name varchar(255)
+  billing_order int
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+}
+
+////////////////////////////////////////////////////
+// ================= REVIEWS ==================
+////////////////////////////////////////////////////
+
+Table ratings {
+  id uuid [pk]
+  user_id uuid [not null, ref: > users.id]
+  film_id uuid [not null, ref: > films.id]
+  score int [not null, note: 'CHECK 1..10']
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+
+  Indexes {
+    (user_id, film_id) [unique]
+  }
+}
+
+Table reviews {
+  id uuid [pk]
+  film_id uuid [not null, ref: > films.id]
+  user_id uuid [not null, ref: > users.id]
+  status review_status [not null]
+  current_version_id uuid
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+}
+
+Table review_versions {
+  id uuid [pk]
+  review_id uuid [not null, ref: > reviews.id]
+  version_number int [not null]
+  title varchar(255) [not null]
+  body text [not null]
+  created_at timestamp [not null]
+  edited_by_user_id uuid [ref: > users.id]
+
+  Indexes {
+    (review_id, version_number) [unique]
+  }
+}
+
+Ref: reviews.current_version_id > review_versions.id
+
+Table comments {
+  id uuid [pk]
+  review_id uuid [not null, ref: > reviews.id]
+  user_id uuid [not null, ref: > users.id]
+  parent_id uuid [ref: > comments.id]
+  body text [not null]
+  status comment_status [not null]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+}
+
+////////////////////////////////////////////////////
+// ================= LISTS ==================
+////////////////////////////////////////////////////
+
+Table user_lists {
+  id uuid [pk]
+  user_id uuid [not null, ref: > users.id]
+  name varchar(255) [not null]
+  type list_type [not null]
+  is_public boolean [not null, default: false]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+
+  Indexes {
+    (user_id, name) [unique]
+  }
+}
+
+Table user_list_items {
+  id uuid [pk]
+  list_id uuid [not null, ref: > user_lists.id]
+  user_id uuid [not null, ref: > users.id]
+  film_id uuid [not null, ref: > films.id]
+  position int
+  note text
+  created_at timestamp [not null]
+
+  Indexes {
+    (user_id, list_id, film_id) [unique]
+  }
+}
+
+////////////////////////////////////////////////////
+// ================= MODERATION ==================
+////////////////////////////////////////////////////
+
+Table complaints {
+  id uuid [pk]
+  user_id uuid [not null, ref: > users.id]
+  target_type target_type [not null]
+  target_id uuid [not null]
+  reason text [not null]
+  status complaint_status [not null]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  resolved_at timestamp
+}
+
+Table moderation_actions {
+  id uuid [pk]
+  moderator_id uuid [not null, ref: > users.id]
+  target_type target_type_ext [not null]
+  target_id uuid [not null]
+  action_type action_type [not null]
+  reason text
+  created_at timestamp [not null]
+  complaint_id uuid [ref: > complaints.id]
+}
+
+Table migrations {
+  id int [pk]
+  applied_at timestamp [not null]
+}

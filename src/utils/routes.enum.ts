@@ -9,4 +9,25 @@ export enum ROUTES {
 
   ADMIN = 'admin',
   ADMIN_USERS = 'users',
+  ADMIN_USER_STATUS = 'users/:userId/status',
+  ADMIN_USER_ROLE = 'users/:userId/roles',
+  ADMIN_REVIEW_HIDE = 'reviews/:id/hide',
+  ADMIN_REVIEW_UNHIDE = 'reviews/:id/unhide',
+  ADMIN_REVIEW_DELETE = 'reviews/:id/delete',
+  ADMIN_COMMENT_HIDE = 'comments/:id/hide',
+  ADMIN_COMMENT_UNHIDE = 'comments/:id/unhide',
+  ADMIN_COMMENT_DELETE = 'comments/:id/delete',
+  ADMIN_USER_BLOCK = 'users/:id/block',
+
+  FILMS = 'films',
+  FILM_GET_MY_RATING = ':id/rating/me',
+  FILM_UPDATE_RATING = ':id/rating',
+
+  REVIEWS = 'reviews',
+  REVIEW_COMMENTS = ':id/comments',
+
+  COMMENTS = 'comments',
+  COMMENT_BY_ID = ':id',
+
+  COMPLAINTS = 'complaints',
 }
