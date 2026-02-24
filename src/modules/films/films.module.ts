@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 
 import {
+  GetFilmByIdService,
+  GetFilmFullByIdService,
   GetFilmsService,
   GetMyFilmRatingService,
   UpdateFilmRatingService,
@@ -11,6 +13,8 @@ import { FilmsController } from './presentation';
 @Module({
   controllers: [FilmsController],
   providers: [
+    GetFilmByIdService,
+    GetFilmFullByIdService,
     GetFilmsService,
     GetMyFilmRatingService,
     UpdateFilmRatingService,

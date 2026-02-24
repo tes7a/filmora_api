@@ -28,11 +28,15 @@ import { JwtAuthGuard } from '@/modules/auth/presentation';
 import { ROUTES } from '@/utils';
 
 import {
+  GetFilmByIdService,
+  GetFilmFullByIdService,
   GetFilmsService,
   GetMyFilmRatingService,
   UpdateFilmRatingService,
 } from '../../application';
 import {
+  FilmDetailsResponseDto,
+  FilmFullResponseDto,
   MyFilmRatingResponseDto,
   PaginatedFilmsResponseDto,
   UpdateFilmRatingDto,
@@ -44,6 +48,8 @@ import { GetFilmsQueryDto } from '../dto/get-films.query';
 @ApiTags('Films')
 export class FilmsController {
   constructor(
+    private readonly getFilmByIdService: GetFilmByIdService,
+    private readonly getFilmFullByIdService: GetFilmFullByIdService,
     private readonly getFilmsService: GetFilmsService,
     private readonly getMyFilmRatingService: GetMyFilmRatingService,
     private readonly updateFilmRatingService: UpdateFilmRatingService,
@@ -150,6 +156,38 @@ export class FilmsController {
       page: query.page,
       pageSize: query.pageSize,
     });
+  }
+
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Get film details by id',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    format: 'uuid',
+    description: 'Film id',
+  })
+  @ApiOkResponse({ type: FilmDetailsResponseDto })
+  @ApiNotFoundResponse({ description: 'Film not found' })
+  async getFilmById(@Param('id', new ParseUUIDPipe()) filmId: string) {
+    return this.getFilmByIdService.execute(filmId);
+  }
+
+  @Get(':id/full')
+  @ApiOperation({
+    summary: 'Get full film details with similar and related-person films',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    format: 'uuid',
+    description: 'Film id',
+  })
+  @ApiOkResponse({ type: FilmFullResponseDto })
+  @ApiNotFoundResponse({ description: 'Film not found' })
+  async getFilmFullById(@Param('id', new ParseUUIDPipe()) filmId: string) {
+    return this.getFilmFullByIdService.execute(filmId);
   }
 
   @UseGuards(JwtAuthGuard)
