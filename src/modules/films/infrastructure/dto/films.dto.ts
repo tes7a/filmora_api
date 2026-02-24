@@ -33,6 +33,50 @@ export interface FilmListItemDto {
   }>;
 }
 
+export interface FilmCountryDto {
+  id: string;
+  code: string;
+  name: string;
+}
+
+export interface FilmTagDto {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export interface FilmPersonDto {
+  personId: string;
+  fullName: string;
+  slug: string;
+  roleType: string;
+  characterName: string | null;
+  billingOrder: number | null;
+}
+
+export interface FilmDetailsDto {
+  id: string;
+  title: string;
+  originalTitle: string;
+  description: string | null;
+  releaseYear: number;
+  durationMin: number;
+  ageRating: string | null;
+  averageRating: number;
+  ratingsCount: number;
+  genres: FilmListItemDto['genres'];
+  tags: FilmTagDto[];
+  countries: FilmCountryDto[];
+  persons: FilmPersonDto[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface FilmFullDto extends FilmDetailsDto {
+  similarFilms: FilmListItemDto[];
+  samePersonFilms: FilmListItemDto[];
+}
+
 export interface PaginatedFilmsDto {
   items: FilmListItemDto[];
   total: number;

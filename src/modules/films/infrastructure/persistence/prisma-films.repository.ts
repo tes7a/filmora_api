@@ -4,6 +4,8 @@ import { film_status, Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared';
 
 import type {
+  FilmDetailsDto,
+  FilmFullDto,
   FilmListItemDto,
   FilmRatingStatsDto,
   GetFilmsParams,
@@ -244,6 +246,129 @@ export class PrismaFilmsRepository implements FilmsRepository {
     };
   }
 
+  async getFilmById(filmId: string): Promise<FilmDetailsDto | null> {
+    const film = await this.getFilmDetailsById(filmId);
+
+    if (!film) {
+      return null;
+    }
+
+    return this.toFilmDetailsDto(film);
+  }
+
+  async getFilmFullById(filmId: string): Promise<FilmFullDto | null> {
+    const film = await this.getFilmDetailsById(filmId);
+
+    if (!film) {
+      return null;
+    }
+
+    const genreIds = film.film_genres.map((item) => item.genre_id);
+    const tagIds = film.film_tags.map((item) => item.tag_id);
+    const personIds = film.film_person_roles.map((item) => item.person_id);
+
+    const similarFilms = genreIds.length || tagIds.length
+      ? await this.prisma.films.findMany({
+          where: {
+            id: { not: filmId },
+            status: film_status.visible,
+            OR: [
+              ...(genreIds.length
+                ? [
+                    {
+                      film_genres: {
+                        some: {
+                          genre_id: { in: genreIds },
+                        },
+                      },
+                    },
+                  ]
+                : []),
+              ...(tagIds.length
+                ? [
+                    {
+                      film_tags: {
+                        some: {
+                          tag_id: { in: tagIds },
+                        },
+                      },
+                    },
+                  ]
+                : []),
+            ],
+          },
+          select: {
+            id: true,
+            title: true,
+            original_title: true,
+            release_year: true,
+            duration_min: true,
+            age_rating: true,
+            average_rating: true,
+            ratings_count: true,
+            created_at: true,
+            film_genres: {
+              select: {
+                genres: {
+                  select: {
+                    id: true,
+                    name: true,
+                    slug: true,
+                  },
+                },
+              },
+            },
+          },
+          orderBy: [{ average_rating: 'desc' }, { created_at: 'desc' }],
+          take: 12,
+        })
+      : [];
+
+    const samePersonFilms = personIds.length
+      ? await this.prisma.films.findMany({
+          where: {
+            id: { not: filmId },
+            status: film_status.visible,
+            film_person_roles: {
+              some: {
+                person_id: { in: personIds },
+              },
+            },
+          },
+          select: {
+            id: true,
+            title: true,
+            original_title: true,
+            release_year: true,
+            duration_min: true,
+            age_rating: true,
+            average_rating: true,
+            ratings_count: true,
+            created_at: true,
+            film_genres: {
+              select: {
+                genres: {
+                  select: {
+                    id: true,
+                    name: true,
+                    slug: true,
+                  },
+                },
+              },
+            },
+          },
+          orderBy: [{ popularity_score: 'desc' }, { created_at: 'desc' }],
+          take: 12,
+        })
+      : [];
+
+    return {
+      ...this.toFilmDetailsDto(film),
+      similarFilms: similarFilms.map((item) => this.toFilmListItem(item)),
+      samePersonFilms: samePersonFilms.map((item) => this.toFilmListItem(item)),
+    };
+  }
+
   private toFilmListItem(
     film: Prisma.filmsGetPayload<{
       select: {
@@ -285,6 +410,186 @@ export class PrismaFilmsRepository implements FilmsRepository {
         name: item.genres.name,
         slug: item.genres.slug,
       })),
+    };
+  }
+
+  private async getFilmDetailsById(filmId: string) {
+    return this.prisma.films.findFirst({
+      where: {
+        id: filmId,
+        status: film_status.visible,
+      },
+      select: {
+        id: true,
+        title: true,
+        original_title: true,
+        description: true,
+        release_year: true,
+        duration_min: true,
+        age_rating: true,
+        average_rating: true,
+        ratings_count: true,
+        created_at: true,
+        updated_at: true,
+        film_genres: {
+          select: {
+            genre_id: true,
+            genres: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+              },
+            },
+          },
+        },
+        film_tags: {
+          select: {
+            tag_id: true,
+            tags: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+              },
+            },
+          },
+        },
+        film_countries: {
+          select: {
+            country_id: true,
+            countries: {
+              select: {
+                id: true,
+                code: true,
+                name: true,
+              },
+            },
+          },
+        },
+        film_person_roles: {
+          select: {
+            person_id: true,
+            role_type: true,
+            character_name: true,
+            billing_order: true,
+            persons: {
+              select: {
+                id: true,
+                full_name: true,
+                slug: true,
+              },
+            },
+          },
+          orderBy: [{ billing_order: 'asc' }, { created_at: 'asc' }],
+        },
+      },
+    });
+  }
+
+  private toFilmDetailsDto(
+    film: Prisma.filmsGetPayload<{
+      select: {
+        id: true;
+        title: true;
+        original_title: true;
+        description: true;
+        release_year: true;
+        duration_min: true;
+        age_rating: true;
+        average_rating: true;
+        ratings_count: true;
+        created_at: true;
+        updated_at: true;
+        film_genres: {
+          select: {
+            genre_id: true;
+            genres: {
+              select: {
+                id: true;
+                name: true;
+                slug: true;
+              };
+            };
+          };
+        };
+        film_tags: {
+          select: {
+            tag_id: true;
+            tags: {
+              select: {
+                id: true;
+                name: true;
+                slug: true;
+              };
+            };
+          };
+        };
+        film_countries: {
+          select: {
+            country_id: true;
+            countries: {
+              select: {
+                id: true;
+                code: true;
+                name: true;
+              };
+            };
+          };
+        };
+        film_person_roles: {
+          select: {
+            person_id: true;
+            role_type: true;
+            character_name: true;
+            billing_order: true;
+            persons: {
+              select: {
+                id: true;
+                full_name: true;
+                slug: true;
+              };
+            };
+          };
+        };
+      };
+    }>,
+  ): FilmDetailsDto {
+    return {
+      id: film.id,
+      title: film.title,
+      originalTitle: film.original_title,
+      description: film.description,
+      releaseYear: film.release_year,
+      durationMin: film.duration_min,
+      ageRating: film.age_rating,
+      averageRating: Number(film.average_rating),
+      ratingsCount: film.ratings_count,
+      genres: film.film_genres.map((item) => ({
+        id: item.genres.id,
+        name: item.genres.name,
+        slug: item.genres.slug,
+      })),
+      tags: film.film_tags.map((item) => ({
+        id: item.tags.id,
+        name: item.tags.name,
+        slug: item.tags.slug,
+      })),
+      countries: film.film_countries.map((item) => ({
+        id: item.countries.id,
+        code: item.countries.code,
+        name: item.countries.name,
+      })),
+      persons: film.film_person_roles.map((item) => ({
+        personId: item.persons.id,
+        fullName: item.persons.full_name,
+        slug: item.persons.slug,
+        roleType: item.role_type,
+        characterName: item.character_name,
+        billingOrder: item.billing_order,
+      })),
+      createdAt: film.created_at,
+      updatedAt: film.updated_at,
     };
   }
 }
