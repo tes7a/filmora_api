@@ -1,5 +1,6 @@
 export type FilmsSortBy = 'rating' | 'date' | 'popularity';
 export type SortOrder = 'asc' | 'desc';
+export type SimilarFilmsSortBy = 'similarity' | FilmsSortBy;
 
 export interface GetFilmsParams {
   q?: string;
@@ -75,6 +76,33 @@ export interface FilmDetailsDto {
 export interface FilmFullDto extends FilmDetailsDto {
   similarFilms: FilmListItemDto[];
   samePersonFilms: FilmListItemDto[];
+}
+
+export interface SimilarFilmDto {
+  film: FilmListItemDto;
+  reason: string;
+}
+
+export interface GetSimilarFilmsParams {
+  q?: string;
+  genreIds?: string[];
+  tagIds?: string[];
+  countryIds?: string[];
+  yearFrom?: number;
+  yearTo?: number;
+  ratingFrom?: number;
+  ratingTo?: number;
+  sortBy?: SimilarFilmsSortBy;
+  sortOrder: SortOrder;
+  page: number;
+  pageSize: number;
+}
+
+export interface PaginatedSimilarFilmsDto {
+  items: SimilarFilmDto[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 export interface PaginatedFilmsDto {

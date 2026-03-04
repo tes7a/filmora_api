@@ -179,3 +179,27 @@ export class FilmFullResponseDto extends FilmDetailsResponseDto {
   @ApiProperty({ type: [FilmListItemResponseDto] })
   samePersonFilms: FilmListItemResponseDto[];
 }
+
+export class SimilarFilmResponseDto {
+  @ApiProperty({ type: FilmListItemResponseDto })
+  film: FilmListItemResponseDto;
+
+  @ApiProperty({
+    example: 'Shared genres: Action, Sci-Fi; shared tags: Cyberpunk',
+  })
+  reason: string;
+}
+
+export class PaginatedSimilarFilmsResponseDto {
+  @ApiProperty({ type: [SimilarFilmResponseDto] })
+  items: SimilarFilmResponseDto[];
+
+  @ApiProperty({ example: 42 })
+  total: number;
+
+  @ApiProperty({ example: 1 })
+  page: number;
+
+  @ApiProperty({ example: 20 })
+  pageSize: number;
+}

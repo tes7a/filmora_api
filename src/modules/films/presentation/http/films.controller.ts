@@ -32,13 +32,16 @@ import {
   GetFilmFullByIdService,
   GetFilmsService,
   GetMyFilmRatingService,
+  GetSimilarFilmsService,
   UpdateFilmRatingService,
 } from '../../application';
 import {
   FilmDetailsResponseDto,
   FilmFullResponseDto,
+  GetSimilarFilmsQueryDto,
   MyFilmRatingResponseDto,
   PaginatedFilmsResponseDto,
+  PaginatedSimilarFilmsResponseDto,
   UpdateFilmRatingDto,
   UpdateFilmRatingResponseDto,
 } from '../dto';
@@ -52,6 +55,7 @@ export class FilmsController {
     private readonly getFilmFullByIdService: GetFilmFullByIdService,
     private readonly getFilmsService: GetFilmsService,
     private readonly getMyFilmRatingService: GetMyFilmRatingService,
+    private readonly getSimilarFilmsService: GetSimilarFilmsService,
     private readonly updateFilmRatingService: UpdateFilmRatingService,
   ) {}
 
@@ -188,6 +192,39 @@ export class FilmsController {
   @ApiNotFoundResponse({ description: 'Film not found' })
   async getFilmFullById(@Param('id', new ParseUUIDPipe()) filmId: string) {
     return this.getFilmFullByIdService.execute(filmId);
+  }
+
+  @Get(ROUTES.FILM_SIMILAR)
+  @ApiOperation({
+    summary: 'Get similar films by genres, tags and persons',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    format: 'uuid',
+    description: 'Film id',
+  })
+  @ApiOkResponse({ type: PaginatedSimilarFilmsResponseDto })
+  @ApiBadRequestResponse({ description: 'Validation error for query params' })
+  @ApiNotFoundResponse({ description: 'Film not found' })
+  async getSimilarFilms(
+    @Param('id', new ParseUUIDPipe()) filmId: string,
+    @Query() query: GetSimilarFilmsQueryDto,
+  ) {
+    return this.getSimilarFilmsService.execute(filmId, {
+      q: query.q,
+      genreIds: query.genreIds,
+      tagIds: query.tagIds,
+      countryIds: query.countryIds,
+      yearFrom: query.yearFrom,
+      yearTo: query.yearTo,
+      ratingFrom: query.ratingFrom,
+      ratingTo: query.ratingTo,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
+      page: query.page,
+      pageSize: query.pageSize,
+    });
   }
 
   @UseGuards(JwtAuthGuard)
