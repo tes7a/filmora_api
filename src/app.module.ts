@@ -10,6 +10,9 @@ import {
   CommentsModule,
   ComplaintsModule,
   FilmsModule,
+  ListsModule,
+  PersonsModule,
+  RecommendationsModule,
   ReviewsModule,
 } from '@/modules';
 import { CoreModule, EmailModule, PrismaModule } from '@/shared';
@@ -86,6 +89,9 @@ import { AppController } from './app.controller';
     AuthModule,
     AdminModule,
     FilmsModule,
+    RecommendationsModule,
+    ListsModule,
+    PersonsModule,
     ReviewsModule,
     CommentsModule,
     ComplaintsModule,

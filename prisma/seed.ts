@@ -2,7 +2,10 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import {
   film_status,
   genre_status,
+  person_status,
   PrismaClient,
+  role_type,
+  tag_status,
   user_status,
 } from '@prisma/client';
 import bcrypt from 'bcrypt';
@@ -211,6 +214,125 @@ async function main() {
   });
   const genreBySlug = new Map(genreRecords.map((genre) => [genre.slug, genre]));
 
+  // Seed countries
+  const countriesToSeed = [
+    { code: 'US', name: 'United States' },
+    { code: 'GB', name: 'United Kingdom' },
+    { code: 'FR', name: 'France' },
+    { code: 'DE', name: 'Germany' },
+    { code: 'JP', name: 'Japan' },
+    { code: 'KR', name: 'South Korea' },
+    { code: 'IN', name: 'India' },
+    { code: 'CA', name: 'Canada' },
+  ] as const;
+
+  for (const country of countriesToSeed) {
+    const existing = await prisma.countries.findUnique({
+      where: { name: country.name },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      await prisma.countries.create({
+        data: {
+          code: country.code,
+          name: country.name,
+          created_at: now,
+          updated_at: now,
+        },
+      });
+      console.log(`Country "${country.name}" created`);
+    }
+  }
+
+  const countryRecords = await prisma.countries.findMany({
+    where: { name: { in: countriesToSeed.map((country) => country.name) } },
+    select: { id: true, name: true },
+  });
+  const countryByName = new Map(countryRecords.map((country) => [country.name, country]));
+
+  // Seed tags
+  const tagsToSeed = [
+    { name: 'Cyberpunk', slug: 'cyberpunk', description: 'Cyberpunk stories' },
+    { name: 'Time Travel', slug: 'time-travel', description: 'Time travel plots' },
+    { name: 'Based on True Story', slug: 'based-on-true-story', description: 'Inspired by real events' },
+    { name: 'Dystopia', slug: 'dystopia', description: 'Dystopian setting' },
+    { name: 'Coming of Age', slug: 'coming-of-age', description: 'Coming of age themes' },
+    { name: 'Heist', slug: 'heist', description: 'Heist narrative' },
+    { name: 'Mind-Bending', slug: 'mind-bending', description: 'Complex nonlinear narratives' },
+    { name: 'Epic', slug: 'epic', description: 'Epic scale stories' },
+  ] as const;
+
+  for (const tag of tagsToSeed) {
+    const existing = await prisma.tags.findUnique({
+      where: { slug: tag.slug },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      await prisma.tags.create({
+        data: {
+          name: tag.name,
+          slug: tag.slug,
+          description: tag.description,
+          status: tag_status.active,
+          created_at: now,
+          updated_at: now,
+        },
+      });
+      console.log(`Tag "${tag.slug}" created`);
+    }
+  }
+
+  const tagRecords = await prisma.tags.findMany({
+    where: { slug: { in: tagsToSeed.map((tag) => tag.slug) } },
+    select: { id: true, slug: true },
+  });
+  const tagBySlug = new Map(tagRecords.map((tag) => [tag.slug, tag]));
+
+  // Seed persons
+  const personsToSeed = [
+    { fullName: 'Keanu Reeves', slug: 'keanu-reeves' },
+    { fullName: 'Christopher Nolan', slug: 'christopher-nolan' },
+    { fullName: 'Denis Villeneuve', slug: 'denis-villeneuve' },
+    { fullName: 'Hans Zimmer', slug: 'hans-zimmer' },
+    { fullName: 'Scarlett Johansson', slug: 'scarlett-johansson' },
+    { fullName: 'Ryan Gosling', slug: 'ryan-gosling' },
+    { fullName: 'Natalie Portman', slug: 'natalie-portman' },
+    { fullName: 'Martin Scorsese', slug: 'martin-scorsese' },
+    { fullName: 'Greta Gerwig', slug: 'greta-gerwig' },
+    { fullName: 'Bong Joon-ho', slug: 'bong-joon-ho' },
+    { fullName: 'Joaquin Phoenix', slug: 'joaquin-phoenix' },
+    { fullName: 'Emma Stone', slug: 'emma-stone' },
+  ] as const;
+
+  for (const person of personsToSeed) {
+    const existing = await prisma.persons.findUnique({
+      where: { slug: person.slug },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      await prisma.persons.create({
+        data: {
+          full_name: person.fullName,
+          slug: person.slug,
+          bio: `Mock bio for ${person.fullName}`,
+          status: person_status.visible,
+          created_at: now,
+          updated_at: now,
+        },
+      });
+      console.log(`Person "${person.slug}" created`);
+    }
+  }
+
+  const personRecords = await prisma.persons.findMany({
+    where: { slug: { in: personsToSeed.map((person) => person.slug) } },
+    select: { id: true, slug: true },
+  });
+  const personBySlug = new Map(personRecords.map((person) => [person.slug, person]));
+
   // Seed films
   const filmsToSeed = Array.from({ length: 50 }, (_, index) => {
     const i = index + 1;
@@ -283,7 +405,111 @@ async function main() {
     }
   }
 
+  // Seed film relations (countries, tags, persons) for mock films
+  const mockFilms = await prisma.films.findMany({
+    where: { original_title: { in: filmsToSeed.map((film) => film.originalTitle) } },
+    select: { id: true, original_title: true },
+    orderBy: { original_title: 'asc' },
+  });
+
+  const mockCountryNames = countriesToSeed.map((country) => country.name);
+  const mockTagSlugs = tagsToSeed.map((tag) => tag.slug);
+  const mockPersonSlugs = personsToSeed.map((person) => person.slug);
+  const personRoleCycle: role_type[] = [
+    role_type.actor,
+    role_type.director,
+    role_type.writer,
+    role_type.producer,
+  ];
+
+  for (let i = 0; i < mockFilms.length; i += 1) {
+    const film = mockFilms[i];
+
+    const countryNames = [
+      mockCountryNames[i % mockCountryNames.length],
+      mockCountryNames[(i + 2) % mockCountryNames.length],
+    ];
+    const tagSlugs = [
+      mockTagSlugs[i % mockTagSlugs.length],
+      mockTagSlugs[(i + 3) % mockTagSlugs.length],
+    ];
+    const personSlugs = [
+      mockPersonSlugs[i % mockPersonSlugs.length],
+      mockPersonSlugs[(i + 1) % mockPersonSlugs.length],
+      mockPersonSlugs[(i + 4) % mockPersonSlugs.length],
+      mockPersonSlugs[(i + 6) % mockPersonSlugs.length],
+    ];
+
+    const filmCountriesData = countryNames
+      .map((name) => countryByName.get(name))
+      .filter((country): country is { id: string; name: string } => Boolean(country))
+      .map((country) => ({
+        film_id: film.id,
+        country_id: country.id,
+        created_at: now,
+      }));
+
+    if (filmCountriesData.length) {
+      await prisma.film_countries.createMany({
+        data: filmCountriesData,
+        skipDuplicates: true,
+      });
+    }
+
+    const filmTagsData = tagSlugs
+      .map((slug) => tagBySlug.get(slug))
+      .filter((tag): tag is { id: string; slug: string } => Boolean(tag))
+      .map((tag) => ({
+        film_id: film.id,
+        tag_id: tag.id,
+        created_at: now,
+      }));
+
+    if (filmTagsData.length) {
+      await prisma.film_tags.createMany({
+        data: filmTagsData,
+        skipDuplicates: true,
+      });
+    }
+
+    for (let k = 0; k < personSlugs.length; k += 1) {
+      const person = personBySlug.get(personSlugs[k]);
+      if (!person) continue;
+
+      const roleType = personRoleCycle[k % personRoleCycle.length];
+      const billingOrder = roleType === role_type.actor ? k + 1 : null;
+      const characterName =
+        roleType === role_type.actor ? `Character ${k + 1}` : null;
+
+      const existingRole = await prisma.film_person_roles.findFirst({
+        where: {
+          film_id: film.id,
+          person_id: person.id,
+          role_type: roleType,
+        },
+        select: { id: true },
+      });
+
+      if (existingRole) {
+        continue;
+      }
+
+      await prisma.film_person_roles.create({
+        data: {
+          film_id: film.id,
+          person_id: person.id,
+          role_type: roleType,
+          character_name: characterName,
+          billing_order: billingOrder,
+          created_at: now,
+          updated_at: now,
+        },
+      });
+    }
+  }
+
   console.log('50 mock films ensured');
+  console.log('Mock countries, tags, persons and relations ensured');
 
   console.log('Seeding completed!');
 }

@@ -1,5 +1,6 @@
 export type FilmsSortBy = 'rating' | 'date' | 'popularity';
 export type SortOrder = 'asc' | 'desc';
+export type SimilarFilmsSortBy = 'similarity' | FilmsSortBy;
 
 export interface GetFilmsParams {
   q?: string;
@@ -31,6 +32,77 @@ export interface FilmListItemDto {
     name: string;
     slug: string;
   }>;
+}
+
+export interface FilmCountryDto {
+  id: string;
+  code: string;
+  name: string;
+}
+
+export interface FilmTagDto {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export interface FilmPersonDto {
+  personId: string;
+  fullName: string;
+  slug: string;
+  roleType: string;
+  characterName: string | null;
+  billingOrder: number | null;
+}
+
+export interface FilmDetailsDto {
+  id: string;
+  title: string;
+  originalTitle: string;
+  description: string | null;
+  releaseYear: number;
+  durationMin: number;
+  ageRating: string | null;
+  averageRating: number;
+  ratingsCount: number;
+  genres: FilmListItemDto['genres'];
+  tags: FilmTagDto[];
+  countries: FilmCountryDto[];
+  persons: FilmPersonDto[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface FilmFullDto extends FilmDetailsDto {
+  similarFilms: FilmListItemDto[];
+  samePersonFilms: FilmListItemDto[];
+}
+
+export interface SimilarFilmDto {
+  film: FilmListItemDto;
+  reason: string;
+}
+
+export interface GetSimilarFilmsParams {
+  q?: string;
+  genreIds?: string[];
+  tagIds?: string[];
+  countryIds?: string[];
+  yearFrom?: number;
+  yearTo?: number;
+  ratingFrom?: number;
+  ratingTo?: number;
+  sortBy?: SimilarFilmsSortBy;
+  sortOrder: SortOrder;
+  page: number;
+  pageSize: number;
+}
+
+export interface PaginatedSimilarFilmsDto {
+  items: SimilarFilmDto[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 export interface PaginatedFilmsDto {

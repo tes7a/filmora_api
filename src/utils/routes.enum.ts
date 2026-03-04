@@ -18,6 +18,16 @@ export enum ROUTES {
   ADMIN_COMMENT_UNHIDE = 'comments/:id/unhide',
   ADMIN_COMMENT_DELETE = 'comments/:id/delete',
   ADMIN_USER_BLOCK = 'users/:id/block',
+  ADMIN_GENRES = 'genres',
+  ADMIN_GENRE_BY_ID = 'genres/:id',
+  ADMIN_GENRE_MERGE = 'genres/:id/merge',
+  ADMIN_TAGS = 'tags',
+  ADMIN_TAG_BY_ID = 'tags/:id',
+  ADMIN_COUNTRIES = 'countries',
+  ADMIN_COUNTRY_BY_ID = 'countries/:id',
+  ADMIN_PERSONS = 'persons',
+  ADMIN_PERSON_BY_ID = 'persons/:id',
+  ADMIN_FILM_BY_ID = 'films/:id',
 
   FILMS = 'films',
   FILM_GET_MY_RATING = ':id/rating/me',
@@ -30,4 +40,15 @@ export enum ROUTES {
   COMMENT_BY_ID = ':id',
 
   COMPLAINTS = 'complaints',
+  RECOMMENDATIONS = 'recommendations',
+  RECOMMENDATIONS_POPULAR = 'popular',
+  RECOMMENDATIONS_NEW = 'new',
+
+  ME_LISTS = 'me/lists',
+  LISTS = 'lists',
+  LIST_BY_ID = 'lists/:id',
+  LIST_ITEMS = 'lists/:id/items',
+  LIST_ITEM_BY_FILM = 'lists/:id/items/:filmId',
+
+  FILM_SIMILAR = ':id/similar',
 }
