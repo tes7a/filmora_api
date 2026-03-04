@@ -1,171 +1,156 @@
-# Filmora API 🎬
+# Filmora API
 
-Backend API for a film catalog platform built with **NestJS**, **PostgreSQL**, and **Prisma**.  
-The project focuses on clean architecture, real-world tooling, and production-ready practices (CI, Docker, validation, migrations, etc.).
+Backend API for a film catalog platform built with NestJS, PostgreSQL, and Prisma.
 
----
+## Stack
 
-## ✨ Features
+- Node.js 22+
+- NestJS 11
+- PostgreSQL
+- Prisma ORM
+- pnpm
+- Swagger (OpenAPI)
+- Jest
+- ESLint + Prettier + Husky
 
-- NestJS (modular architecture)
-- PostgreSQL (local via Docker, production via Supabase)
-- Prisma ORM (schema, migrations, type-safe queries)
-- Swagger (OpenAPI documentation)
-- Validation with `class-validator`
-- ESLint + Prettier + Husky + lint-staged
-- Unit tests with Jest
-- GitHub Actions CI (lint, typecheck, tests)
-- Docker for local database
+## Implemented Modules
 
----
+- `auth`
+- `admin`
+- `films`
+- `recommendations`
+- `persons`
+- `reviews`
+- `comments`
+- `complaints`
+- `lists`
 
-## 🛠 Tech Stack
+## Quick Start
 
-- **Node.js** 22+
-- **NestJS**
-- **Prisma ORM**
-- **PostgreSQL**
-- **Supabase** (production database)
-- **pnpm**
-- **Jest**
-- **GitHub Actions**
-
----
-
-## 📦 Project Setup
+1. Install dependencies:
 
 ```bash
 pnpm install
 ```
 
----
+2. Create `.env` from example:
 
-## 🐘 Database (Local with Docker)
+```bash
+cp .env.exmaple .env
+```
 
-Start local PostgreSQL:
+3. Start PostgreSQL via Docker:
 
 ```bash
 docker compose up -d
 ```
 
-Environment example (`.env`):
+4. Configure DB port in `.env`:
+
+- `docker-compose.yml` exposes Postgres on `localhost:5433`
+- set `DATABASE_URL` / `DIRECT_URL` to `5433` if using Docker locally
+
+Example:
 
 ```env
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/filmora?schema=public"
+DATABASE_URL=postgresql://postgres:postgres@localhost:5433/filmora?schema=public
+DIRECT_URL=postgresql://postgres:postgres@localhost:5433/filmora
 ```
 
-Prisma:
+5. Apply migrations and generate Prisma client:
 
 ```bash
+pnpm exec prisma migrate deploy
 pnpm exec prisma generate
-pnpm exec prisma studio
 ```
 
----
-
-## ▶️ Running the Project
+6. (Optional) Seed mock data:
 
 ```bash
-# development
+pnpm exec prisma db seed
+```
+
+7. Run app:
+
+```bash
 pnpm start
-
-# production build
-pnpm build
-pnpm start:prod
 ```
 
----
+## Scripts
 
-## 🧪 Testing
+- `pnpm start` - run in watch mode
+- `pnpm build` - typecheck + build to `dist`
+- `pnpm start:prod` - run built app
+- `pnpm lint` - lint check
+- `pnpm lint:fix` - lint autofix
+- `pnpm typecheck` - TypeScript check
+- `pnpm test` - unit tests
+- `pnpm test:e2e` - e2e tests
 
-```bash
-# unit tests
-pnpm test
+## API Docs
 
-# type checking
-pnpm typecheck
+Swagger UI:
 
-# lint
-pnpm lint
-```
+- `http://localhost:3000/api/docs`
 
----
+## Key Public Endpoints
 
-## 📖 API Documentation (Swagger)
+- `GET /api/films`
+- `GET /api/films/:id`
+- `GET /api/films/:id/full`
+- `GET /api/films/:id/similar`
+- `GET /api/recommendations/popular`
+- `GET /api/recommendations/new`
+- `GET /api/persons`
+- `GET /api/persons/:id`
+- `GET /api/reviews/:id`
+- `GET /api/reviews/:id/comments`
 
-After running the app:
+Most list endpoints support search/sort/pagination query params.
 
-👉 http://localhost:3000/api/docs
+## Admin Content Endpoints
 
----
+Available under `/api/admin` (requires `admin` or `moderator` role):
 
-## 🔄 Migrations
+- Genres: `GET/POST/PATCH/DELETE /genres`, `POST /genres/:id/merge`
+- Tags: `GET/POST/PATCH/DELETE /tags`
+- Countries: `GET/POST/PATCH/DELETE /countries`
+- Persons: `GET/POST/PATCH/DELETE /persons`
+- Films: `GET/POST/PATCH/DELETE /films`
 
-Migrations are stored in:
+Admin moderation endpoints are also available for complaints/reviews/comments/users.
 
-```
-prisma/migrations/
-```
+## Project Structure
 
-Apply migrations (production example):
-
-```bash
-DATABASE_URL=... DIRECT_URL=... pnpm exec prisma migrate deploy
-```
-
----
-
-## 🤖 CI (GitHub Actions)
-
-On every push and pull request:
-
-- pnpm install
-- pnpm lint
-- pnpm typecheck
-- pnpm test
-
-Workflow file:
-
-```
-.github/workflows/ci.yml
-```
-
----
-
-## 📁 Project Structure
-
-```
+```text
 src/
-  modules/        # feature modules (films, users, reviews, etc.)
-  common/         # shared filters, pipes, guards
-  database/       # Prisma module/service
-  main.ts         # app bootstrap
+  app.module.ts
+  main.ts
+  modules/
+    auth/
+    admin/
+    films/
+    recommendations/
+    persons/
+    reviews/
+    comments/
+    complaints/
+    lists/
+  shared/
+    infrastructure/
+      prisma/
+      core/
+      email/
+  utils/
 prisma/
-  schema.prisma   # data models
-  migrations/     # migration history
+  schema.prisma
+  seed.ts
 ```
 
----
+## CI
 
-## 🚀 Goals of the Project
+GitHub Actions workflow (`.github/workflows/ci.yml`) runs checks on push/PR.
 
-This project is part of a coursework but is designed to match real-world backend practices:
+## License
 
-- Clean architecture
-- Production-ready tooling
-- Type safety
-- Testability
-- Infrastructure awareness
-
----
-
-## 👤 Author
-
-Konstantin Dudkin  
-Software Engineer / Backend & Full-stack
-
----
-
-## 📄 License
-
-MIT
+UNLICENSED
