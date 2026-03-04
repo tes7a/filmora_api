@@ -5,6 +5,7 @@ import {
   GetFilmFullByIdService,
   GetFilmsService,
   GetMyFilmRatingService,
+  GetSimilarFilmsService,
   UpdateFilmRatingService,
 } from './application';
 import { FILMS_REPOSITORY, PrismaFilmsRepository } from './infrastructure';
@@ -17,6 +18,7 @@ import { FilmsController } from './presentation';
     GetFilmFullByIdService,
     GetFilmsService,
     GetMyFilmRatingService,
+    GetSimilarFilmsService,
     UpdateFilmRatingService,
     {
       provide: FILMS_REPOSITORY,

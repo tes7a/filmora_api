@@ -4,6 +4,7 @@ import { CommentsModule } from './comments/comments.module';
 import { ComplaintsModule } from './complaints/complaints.module';
 import { FilmsModule } from './films/films.module';
 import { ListsModule } from './lists/lists.module';
+import { RecommendationsModule } from './recommendations/recommendations.module';
 import { ReviewsModule } from './reviews/reviews.module';
 
 export {
@@ -13,5 +14,6 @@ export {
   ComplaintsModule,
   FilmsModule,
   ListsModule,
+  RecommendationsModule,
   ReviewsModule,
 };

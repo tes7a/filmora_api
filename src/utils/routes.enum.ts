@@ -30,10 +30,15 @@ export enum ROUTES {
   COMMENT_BY_ID = ':id',
 
   COMPLAINTS = 'complaints',
+  RECOMMENDATIONS = 'recommendations',
+  RECOMMENDATIONS_POPULAR = 'popular',
+  RECOMMENDATIONS_NEW = 'new',
 
   ME_LISTS = 'me/lists',
   LISTS = 'lists',
   LIST_BY_ID = 'lists/:id',
   LIST_ITEMS = 'lists/:id/items',
   LIST_ITEM_BY_FILM = 'lists/:id/items/:filmId',
+
+  FILM_SIMILAR = ':id/similar',
 }
