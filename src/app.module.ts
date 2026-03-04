@@ -11,6 +11,7 @@ import {
   ComplaintsModule,
   FilmsModule,
   ListsModule,
+  PersonsModule,
   RecommendationsModule,
   ReviewsModule,
 } from '@/modules';
@@ -90,6 +91,7 @@ import { AppController } from './app.controller';
     FilmsModule,
     RecommendationsModule,
     ListsModule,
+    PersonsModule,
     ReviewsModule,
     CommentsModule,
     ComplaintsModule,
