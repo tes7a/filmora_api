@@ -3,8 +3,12 @@ import {
   action_type,
   comment_status,
   complaint_status,
+  film_status,
+  genre_status,
+  person_status,
   Prisma,
   review_status,
+  tag_status,
   target_type,
   target_type_ext,
   user_status,
@@ -14,13 +18,34 @@ import { PrismaService } from '@/shared';
 
 import type {
   AddUserRoleParams,
+  AdminFilmDto,
   AdminUserDto,
   BlockUserParams,
+  CountryDto,
+  CreateAdminFilmParams,
+  CreateCountryParams,
+  CreateGenreParams,
+  CreatePersonParams,
+  CreateTagParams,
   DeleteReviewOrCommentParams,
+  GenreDto,
+  GetAdminFilmsParams,
   GetComplaintsParams,
+  GetCountriesParams,
+  GetGenresParams,
+  GetPersonsParams,
+  GetTagsParams,
   GetUsersParams,
+  MergeGenreParams,
   ModerateCommentOrReviewParams,
   ModerationActionDto,
+  PersonDto,
+  TagDto,
+  UpdateAdminFilmParams,
+  UpdateCountryParams,
+  UpdateGenreParams,
+  UpdatePersonParams,
+  UpdateTagParams,
   UpdateUserStatusParams,
 } from '../dto';
 import type { AdminRepository } from './admin.repository';
@@ -564,6 +589,663 @@ export class PrismaAdminRepository implements AdminRepository {
     });
   }
 
+  async getGenres(params: GetGenresParams) {
+    const { q, status, page, limit, sortBy, sortOrder } = params;
+    const skip = (page - 1) * limit;
+    const sortMap = {
+      name: 'name',
+      status: 'status',
+      createdAt: 'created_at',
+      updatedAt: 'updated_at',
+    } as const;
+
+    const where: Prisma.genresWhereInput = {
+      ...(status ? { status } : {}),
+      ...(q
+        ? {
+            OR: [
+              {
+                name: {
+                  contains: q,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+              {
+                slug: {
+                  contains: q,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    const [genres, total] = await this.prisma.$transaction([
+      this.prisma.genres.findMany({
+        where,
+        orderBy: { [sortMap[sortBy]]: sortOrder },
+        skip,
+        take: limit,
+      }),
+      this.prisma.genres.count({ where }),
+    ]);
+
+    return {
+      items: genres.map((genre) => this.toGenreDto(genre)),
+      total,
+      page,
+      limit,
+    };
+  }
+
+  async createGenre(params: CreateGenreParams): Promise<GenreDto> {
+    const now = new Date();
+    const genre = await this.prisma.genres.create({
+      data: {
+        name: params.name,
+        slug: params.slug,
+        description: params.description,
+        status: params.status,
+        created_at: now,
+        updated_at: now,
+      },
+    });
+
+    return this.toGenreDto(genre);
+  }
+
+  async updateGenre(params: UpdateGenreParams): Promise<GenreDto | null> {
+    try {
+      const genre = await this.prisma.genres.update({
+        where: { id: params.id },
+        data: {
+          ...(params.name !== undefined ? { name: params.name } : {}),
+          ...(params.slug !== undefined ? { slug: params.slug } : {}),
+          ...(params.description !== undefined ? { description: params.description } : {}),
+          ...(params.status !== undefined ? { status: params.status } : {}),
+          updated_at: new Date(),
+        },
+      });
+
+      return this.toGenreDto(genre);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        return null;
+      }
+
+      throw error;
+    }
+  }
+
+  async deleteGenre(id: string): Promise<boolean> {
+    try {
+      await this.prisma.genres.delete({
+        where: { id },
+      });
+      return true;
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        return false;
+      }
+
+      throw error;
+    }
+  }
+
+  async mergeGenre(params: MergeGenreParams): Promise<GenreDto | null> {
+    const { sourceGenreId, targetGenreId } = params;
+
+    if (sourceGenreId === targetGenreId) {
+      throw new Error('GENRE_MERGE_SAME_TARGET');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const [source, target] = await Promise.all([
+        tx.genres.findUnique({
+          where: { id: sourceGenreId },
+          select: { id: true },
+        }),
+        tx.genres.findUnique({
+          where: { id: targetGenreId },
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            description: true,
+            status: true,
+            created_at: true,
+            updated_at: true,
+          },
+        }),
+      ]);
+
+      if (!source || !target) {
+        return null;
+      }
+
+      const sourceRelations = await tx.film_genres.findMany({
+        where: { genre_id: sourceGenreId },
+        select: { film_id: true },
+      });
+
+      if (sourceRelations.length) {
+        await tx.film_genres.createMany({
+          data: sourceRelations.map((relation) => ({
+            film_id: relation.film_id,
+            genre_id: targetGenreId,
+          })),
+          skipDuplicates: true,
+        });
+      }
+
+      await tx.film_genres.deleteMany({
+        where: { genre_id: sourceGenreId },
+      });
+
+      await tx.genres.delete({
+        where: { id: sourceGenreId },
+      });
+
+      return this.toGenreDto(target);
+    });
+  }
+
+  async getTags(params: GetTagsParams) {
+    const { q, status, page, limit, sortBy, sortOrder } = params;
+    const skip = (page - 1) * limit;
+    const sortMap = {
+      name: 'name',
+      status: 'status',
+      createdAt: 'created_at',
+      updatedAt: 'updated_at',
+    } as const;
+
+    const where: Prisma.tagsWhereInput = {
+      ...(status ? { status } : {}),
+      ...(q
+        ? {
+            OR: [
+              {
+                name: {
+                  contains: q,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+              {
+                slug: {
+                  contains: q,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    const [tags, total] = await this.prisma.$transaction([
+      this.prisma.tags.findMany({
+        where,
+        orderBy: { [sortMap[sortBy]]: sortOrder },
+        skip,
+        take: limit,
+      }),
+      this.prisma.tags.count({ where }),
+    ]);
+
+    return {
+      items: tags.map((tag) => this.toTagDto(tag)),
+      total,
+      page,
+      limit,
+    };
+  }
+
+  async createTag(params: CreateTagParams): Promise<TagDto> {
+    const now = new Date();
+    const tag = await this.prisma.tags.create({
+      data: {
+        name: params.name,
+        slug: params.slug,
+        description: params.description,
+        status: params.status,
+        created_at: now,
+        updated_at: now,
+      },
+    });
+
+    return this.toTagDto(tag);
+  }
+
+  async updateTag(params: UpdateTagParams): Promise<TagDto | null> {
+    try {
+      const tag = await this.prisma.tags.update({
+        where: { id: params.id },
+        data: {
+          ...(params.name !== undefined ? { name: params.name } : {}),
+          ...(params.slug !== undefined ? { slug: params.slug } : {}),
+          ...(params.description !== undefined ? { description: params.description } : {}),
+          ...(params.status !== undefined ? { status: params.status } : {}),
+          updated_at: new Date(),
+        },
+      });
+
+      return this.toTagDto(tag);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        return null;
+      }
+
+      throw error;
+    }
+  }
+
+  async deleteTag(id: string): Promise<boolean> {
+    try {
+      await this.prisma.tags.delete({
+        where: { id },
+      });
+      return true;
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        return false;
+      }
+
+      throw error;
+    }
+  }
+
+  async getCountries(params: GetCountriesParams) {
+    const { q, page, limit, sortBy, sortOrder } = params;
+    const skip = (page - 1) * limit;
+    const sortMap = {
+      name: 'name',
+      code: 'code',
+      createdAt: 'created_at',
+      updatedAt: 'updated_at',
+    } as const;
+
+    const where: Prisma.countriesWhereInput = {
+      ...(q
+        ? {
+            OR: [
+              {
+                name: {
+                  contains: q,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+              {
+                code: {
+                  contains: q.toUpperCase(),
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    const [countries, total] = await this.prisma.$transaction([
+      this.prisma.countries.findMany({
+        where,
+        orderBy: { [sortMap[sortBy]]: sortOrder },
+        skip,
+        take: limit,
+      }),
+      this.prisma.countries.count({ where }),
+    ]);
+
+    return {
+      items: countries.map((country) => this.toCountryDto(country)),
+      total,
+      page,
+      limit,
+    };
+  }
+
+  async createCountry(params: CreateCountryParams): Promise<CountryDto> {
+    const now = new Date();
+    const country = await this.prisma.countries.create({
+      data: {
+        code: params.code,
+        name: params.name,
+        created_at: now,
+        updated_at: now,
+      },
+    });
+
+    return this.toCountryDto(country);
+  }
+
+  async updateCountry(params: UpdateCountryParams): Promise<CountryDto | null> {
+    try {
+      const country = await this.prisma.countries.update({
+        where: { id: params.id },
+        data: {
+          ...(params.code !== undefined ? { code: params.code } : {}),
+          ...(params.name !== undefined ? { name: params.name } : {}),
+          updated_at: new Date(),
+        },
+      });
+
+      return this.toCountryDto(country);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        return null;
+      }
+
+      throw error;
+    }
+  }
+
+  async deleteCountry(id: string): Promise<boolean> {
+    try {
+      await this.prisma.countries.delete({
+        where: { id },
+      });
+      return true;
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        return false;
+      }
+
+      throw error;
+    }
+  }
+
+  async getPersons(params: GetPersonsParams) {
+    const { q, status, page, limit, sortBy, sortOrder } = params;
+    const skip = (page - 1) * limit;
+    const sortMap = {
+      fullName: 'full_name',
+      status: 'status',
+      createdAt: 'created_at',
+      updatedAt: 'updated_at',
+    } as const;
+
+    const where: Prisma.personsWhereInput = {
+      ...(status ? { status } : {}),
+      ...(q
+        ? {
+            OR: [
+              {
+                full_name: {
+                  contains: q,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+              {
+                slug: {
+                  contains: q,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    const [persons, total] = await this.prisma.$transaction([
+      this.prisma.persons.findMany({
+        where,
+        orderBy: { [sortMap[sortBy]]: sortOrder },
+        skip,
+        take: limit,
+      }),
+      this.prisma.persons.count({ where }),
+    ]);
+
+    return {
+      items: persons.map((person) => this.toPersonDto(person)),
+      total,
+      page,
+      limit,
+    };
+  }
+
+  async createPerson(params: CreatePersonParams): Promise<PersonDto> {
+    const now = new Date();
+    const person = await this.prisma.persons.create({
+      data: {
+        full_name: params.fullName,
+        slug: params.slug,
+        birth_date: params.birthDate ?? null,
+        death_date: params.deathDate ?? null,
+        bio: params.bio,
+        status: params.status,
+        created_at: now,
+        updated_at: now,
+      },
+    });
+
+    return this.toPersonDto(person);
+  }
+
+  async updatePerson(params: UpdatePersonParams): Promise<PersonDto | null> {
+    try {
+      const person = await this.prisma.persons.update({
+        where: { id: params.id },
+        data: {
+          ...(params.fullName !== undefined ? { full_name: params.fullName } : {}),
+          ...(params.slug !== undefined ? { slug: params.slug } : {}),
+          ...(params.birthDate !== undefined ? { birth_date: params.birthDate } : {}),
+          ...(params.deathDate !== undefined ? { death_date: params.deathDate } : {}),
+          ...(params.bio !== undefined ? { bio: params.bio } : {}),
+          ...(params.status !== undefined ? { status: params.status } : {}),
+          updated_at: new Date(),
+        },
+      });
+
+      return this.toPersonDto(person);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        return null;
+      }
+
+      throw error;
+    }
+  }
+
+  async deletePerson(id: string): Promise<boolean> {
+    try {
+      await this.prisma.persons.delete({
+        where: { id },
+      });
+      return true;
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        return false;
+      }
+
+      throw error;
+    }
+  }
+
+  async getFilms(params: GetAdminFilmsParams) {
+    const {
+      q,
+      status,
+      yearFrom,
+      yearTo,
+      ratingFrom,
+      ratingTo,
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    } = params;
+    const skip = (page - 1) * limit;
+
+    const sortMap = {
+      title: 'title',
+      status: 'status',
+      releaseYear: 'release_year',
+      averageRating: 'average_rating',
+      ratingsCount: 'ratings_count',
+      popularityScore: 'popularity_score',
+      createdAt: 'created_at',
+      updatedAt: 'updated_at',
+    } as const;
+
+    const releaseYearFilter: Prisma.IntFilter = {};
+    const averageRatingFilter: Prisma.DecimalFilter = {};
+
+    if (yearFrom !== undefined) {
+      releaseYearFilter.gte = yearFrom;
+    }
+
+    if (yearTo !== undefined) {
+      releaseYearFilter.lte = yearTo;
+    }
+
+    if (ratingFrom !== undefined) {
+      averageRatingFilter.gte = new Prisma.Decimal(ratingFrom);
+    }
+
+    if (ratingTo !== undefined) {
+      averageRatingFilter.lte = new Prisma.Decimal(ratingTo);
+    }
+
+    const where: Prisma.filmsWhereInput = {
+      ...(status ? { status } : {}),
+      ...(q
+        ? {
+            OR: [
+              {
+                title: {
+                  contains: q,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+              {
+                original_title: {
+                  contains: q,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+            ],
+          }
+        : {}),
+      ...(Object.keys(releaseYearFilter).length
+        ? { release_year: releaseYearFilter }
+        : {}),
+      ...(Object.keys(averageRatingFilter).length
+        ? { average_rating: averageRatingFilter }
+        : {}),
+    };
+
+    const [films, total] = await this.prisma.$transaction([
+      this.prisma.films.findMany({
+        where,
+        orderBy: { [sortMap[sortBy]]: sortOrder },
+        skip,
+        take: limit,
+      }),
+      this.prisma.films.count({ where }),
+    ]);
+
+    return {
+      items: films.map((film) => this.toAdminFilmDto(film)),
+      total,
+      page,
+      limit,
+    };
+  }
+
+  async createFilm(params: CreateAdminFilmParams): Promise<AdminFilmDto> {
+    const film = await this.prisma.films.create({
+      data: {
+        title: params.title,
+        original_title: params.originalTitle,
+        description: params.description,
+        release_year: params.releaseYear,
+        duration_min: params.durationMin,
+        age_rating: params.ageRating,
+        status: params.status,
+        popularity_score: new Prisma.Decimal(params.popularityScore ?? 0),
+      },
+    });
+
+    return this.toAdminFilmDto(film);
+  }
+
+  async updateFilm(params: UpdateAdminFilmParams): Promise<AdminFilmDto | null> {
+    try {
+      const film = await this.prisma.films.update({
+        where: { id: params.id },
+        data: {
+          ...(params.title !== undefined ? { title: params.title } : {}),
+          ...(params.originalTitle !== undefined
+            ? { original_title: params.originalTitle }
+            : {}),
+          ...(params.description !== undefined ? { description: params.description } : {}),
+          ...(params.releaseYear !== undefined ? { release_year: params.releaseYear } : {}),
+          ...(params.durationMin !== undefined ? { duration_min: params.durationMin } : {}),
+          ...(params.ageRating !== undefined ? { age_rating: params.ageRating } : {}),
+          ...(params.status !== undefined ? { status: params.status } : {}),
+          ...(params.popularityScore !== undefined
+            ? { popularity_score: new Prisma.Decimal(params.popularityScore) }
+            : {}),
+          updated_at: new Date(),
+        },
+      });
+
+      return this.toAdminFilmDto(film);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        return null;
+      }
+
+      throw error;
+    }
+  }
+
+  async deleteFilm(id: string): Promise<boolean> {
+    try {
+      await this.prisma.films.delete({
+        where: { id },
+      });
+      return true;
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        return false;
+      }
+
+      throw error;
+    }
+  }
+
   private async getUserById(userId: string): Promise<AdminUserDto | null> {
     const user = await this.prisma.users.findUnique({
       where: { id: userId },
@@ -600,6 +1282,118 @@ export class PrismaAdminRepository implements AdminRepository {
       updatedAt: user.updated_at,
       lastLoginAt: user.last_login_at,
       roles: user.user_roles.map((ur) => ur.roles.code),
+    };
+  }
+
+  private toGenreDto(genre: {
+    id: string;
+    name: string;
+    slug: string;
+    description: string | null;
+    status: genre_status;
+    created_at: Date;
+    updated_at: Date;
+  }): GenreDto {
+    return {
+      id: genre.id,
+      name: genre.name,
+      slug: genre.slug,
+      description: genre.description,
+      status: genre.status,
+      createdAt: genre.created_at,
+      updatedAt: genre.updated_at,
+    };
+  }
+
+  private toTagDto(tag: {
+    id: string;
+    name: string;
+    slug: string;
+    description: string | null;
+    status: tag_status;
+    created_at: Date;
+    updated_at: Date;
+  }): TagDto {
+    return {
+      id: tag.id,
+      name: tag.name,
+      slug: tag.slug,
+      description: tag.description,
+      status: tag.status,
+      createdAt: tag.created_at,
+      updatedAt: tag.updated_at,
+    };
+  }
+
+  private toCountryDto(country: {
+    id: string;
+    code: string;
+    name: string;
+    created_at: Date;
+    updated_at: Date;
+  }): CountryDto {
+    return {
+      id: country.id,
+      code: country.code,
+      name: country.name,
+      createdAt: country.created_at,
+      updatedAt: country.updated_at,
+    };
+  }
+
+  private toPersonDto(person: {
+    id: string;
+    full_name: string;
+    slug: string;
+    birth_date: Date | null;
+    death_date: Date | null;
+    bio: string | null;
+    status: person_status;
+    created_at: Date;
+    updated_at: Date;
+  }): PersonDto {
+    return {
+      id: person.id,
+      fullName: person.full_name,
+      slug: person.slug,
+      birthDate: person.birth_date,
+      deathDate: person.death_date,
+      bio: person.bio,
+      status: person.status,
+      createdAt: person.created_at,
+      updatedAt: person.updated_at,
+    };
+  }
+
+  private toAdminFilmDto(film: {
+    id: string;
+    title: string;
+    original_title: string;
+    description: string | null;
+    release_year: number;
+    duration_min: number;
+    age_rating: string | null;
+    status: film_status;
+    average_rating: Prisma.Decimal;
+    ratings_count: number;
+    popularity_score: Prisma.Decimal;
+    created_at: Date;
+    updated_at: Date;
+  }): AdminFilmDto {
+    return {
+      id: film.id,
+      title: film.title,
+      originalTitle: film.original_title,
+      description: film.description,
+      releaseYear: film.release_year,
+      durationMin: film.duration_min,
+      ageRating: film.age_rating,
+      status: film.status,
+      averageRating: Number(film.average_rating),
+      ratingsCount: film.ratings_count,
+      popularityScore: Number(film.popularity_score),
+      createdAt: film.created_at,
+      updatedAt: film.updated_at,
     };
   }
 
